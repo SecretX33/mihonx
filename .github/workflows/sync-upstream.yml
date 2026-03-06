@@ -1,0 +1,51 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # Run daily at 04:00 UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync with upstream
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/mihonapp/mihon.git
+
+      - name: Fetch upstream
+        run: git fetch upstream main --tags
+
+      - name: Fast-forward merge
+        run: |
+          git checkout main
+
+          # Attempt fast-forward only — if it fails, the merge is not
+          # clean and we abort without making any changes.
+          if git merge --ff-only upstream/main; then
+            echo "Fast-forward merge succeeded."
+          else
+            echo "::warning::Fast-forward merge not possible (fork has diverged). Skipping sync."
+            exit 0
+          fi
+
+      - name: Push changes and tags
+        run: |
+          # Only push if there are new commits to push
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+            git push origin main --tags
+            echo "Pushed upstream changes and tags."
+          else
+            echo "Already up to date, nothing to push."
+          fi

@@ -1,0 +1,102 @@
+name: Mirror Upstream Releases
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '30 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    name: Mirror upstream releases
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Mirror releases from upstream
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const upstream = { owner: 'mihonapp', repo: 'mihon' };
+            const fork = { owner: context.repo.owner, repo: context.repo.repo };
+
+            // Fetch all upstream releases (including drafts is not possible
+            // cross-repo, so we only see published ones).
+            const upstreamReleases = await github.paginate(
+              github.rest.repos.listReleases,
+              { ...upstream, per_page: 100 },
+            );
+
+            const forkReleases = await github.paginate(
+              github.rest.repos.listReleases,
+              { ...fork, per_page: 100 },
+            );
+
+            const forkReleasesByTag = new Map(
+              forkReleases.map(r => [r.tag_name, r]),
+            );
+            const upstreamTags = new Set(
+              upstreamReleases.map(r => r.tag_name),
+            );
+
+            // --- Create missing releases ---
+            for (const rel of upstreamReleases) {
+              if (forkReleasesByTag.has(rel.tag_name)) {
+                continue;
+              }
+
+              core.info(`Creating release ${rel.tag_name} ...`);
+
+              // Create the release (metadata only — no assets).
+              const created = await github.rest.repos.createRelease({
+                ...fork,
+                tag_name: rel.tag_name,
+                name: rel.name || rel.tag_name,
+                body: rel.body || '',
+                draft: rel.draft,
+                prerelease: rel.prerelease,
+              });
+
+              // Mirror assets from upstream.
+              for (const asset of rel.assets) {
+                core.info(`  Uploading asset ${asset.name} ...`);
+
+                // Download the asset from upstream.
+                const download = await github.rest.repos.getReleaseAsset({
+                  ...upstream,
+                  asset_id: asset.id,
+                  headers: { Accept: 'application/octet-stream' },
+                });
+
+                // Upload to our fork's release.
+                await github.rest.repos.uploadReleaseAsset({
+                  ...fork,
+                  release_id: created.data.id,
+                  name: asset.name,
+                  label: asset.label || undefined,
+                  data: Buffer.from(download.data),
+                  headers: {
+                    'content-type': asset.content_type,
+                    'content-length': download.data.length || download.data.byteLength,
+                  },
+                });
+              }
+
+              core.info(`Release ${rel.tag_name} created with ${rel.assets.length} asset(s).`);
+            }
+
+            // --- Delete fork releases whose tag no longer exists upstream ---
+            for (const [tag, rel] of forkReleasesByTag) {
+              if (!upstreamTags.has(tag)) {
+                core.info(`Deleting release ${tag} (no longer exists upstream) ...`);
+                await github.rest.repos.deleteRelease({
+                  ...fork,
+                  release_id: rel.id,
+                });
+                core.info(`Release ${tag} deleted.`);
+              }
+            }
+
+            core.info('Release mirroring complete.');
