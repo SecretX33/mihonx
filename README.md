@@ -1,10 +1,10 @@
 <div align="center">
 
 <a href="https://mihon.app">
-    <img src="./.github/assets/logo.png" alt="Mihon logo" title="Mihon logo" width="80"/>
+    <img src="./.github/assets/logo.png" alt="MihonX logo" title="MihonX logo" width="80"/>
 </a>
 
-# Mihon [App](#)
+# MihonX [App](#)
 
 ### Full-featured reader
 Discover and read manga, webtoons, comics, and more – easier than ever on your Android device.
@@ -18,8 +18,8 @@ Discover and read manga, webtoons, comics, and more – easier than ever on your
 
 ## Download
 
-[![Mihon Stable](https://img.shields.io/github/release/mihonapp/mihon.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://mihon.app/download)
-[![Mihon Beta](https://img.shields.io/github/v/release/mihonapp/mihon-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://mihon.app/download)
+[![MihonX Stable](https://img.shields.io/github/release/mihonapp/mihon.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://mihon.app/download)
+[![MihonX Beta](https://img.shields.io/github/v/release/mihonapp/mihon-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://mihon.app/download)
 
 *Requires Android 8.0 or higher.*
 
@@ -57,7 +57,7 @@ Before reporting a new issue, take a look at the [FAQ](https://mihon.app/docs/fa
 Thank you to all the people who have contributed!
 
 <a href="https://github.com/mihonapp/mihon/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=mihonapp/mihon" alt="Mihon app contributors" title="Mihon app contributors" width="800"/>
+    <img src="https://contrib.rocks/image?repo=mihonapp/mihon" alt="MihonX app contributors" title="MihonX app contributors" width="800"/>
 </a>
 
 ### Disclaimer
@@ -68,7 +68,7 @@ The developer(s) of this application does not have any affiliation with the cont
 
 <pre>
 Copyright © 2015 Javier Tomás
-Copyright © 2024 Mihon Open Source Project
+Copyright © 2024 MihonX Open Source Project
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
