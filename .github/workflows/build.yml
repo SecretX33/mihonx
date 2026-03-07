@@ -26,6 +26,11 @@ on:
       - main
     paths: *source-paths
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'App version to use (e.g. 1.2.3, leave empty for default)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -55,6 +60,14 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+
+      - name: Set version
+        if: inputs.version != ''
+        run: |
+          VERSION="${{ inputs.version }}"
+          VERSION="${VERSION#v}"
+          echo "Derived version: $VERSION"
+          sed -i "s/versionName = \".*\"/versionName = \"$VERSION\"/" app/build.gradle.kts
 
       - name: Check code format
         run: ./gradlew spotlessCheck

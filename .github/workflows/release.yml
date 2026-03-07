@@ -143,6 +143,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
 
+      - name: Set version from tag
+        run: |
+          TAG="${{ needs.get_tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "Derived version: $VERSION"
+          sed -i "s/versionName = \".*\"/versionName = \"$VERSION\"/" app/build.gradle.kts
+
       - name: Build
         run: ./gradlew assembleRelease -Pinclude-telemetry -Penable-updater
 
@@ -202,6 +209,13 @@ jobs:
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
         with:
           cache-disabled: true
+
+      - name: Set version from tag
+        run: |
+          TAG="${{ needs.get_tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "Derived version: $VERSION"
+          sed -i "s/versionName = \".*\"/versionName = \"$VERSION\"/" app/build.gradle.kts
 
       - name: Build
         run: ./gradlew assembleFoss -Penable-updater
