@@ -1,16 +1,30 @@
 name: Build & Test
 on:
   pull_request:
-    paths:
-      - '**'
-      - '!**.md'
-      - '!i18n/src/commonMain/moko-resources/**/strings.xml'
-      - '!i18n/src/commonMain/moko-resources/**/plurals.xml'
-      - 'i18n/src/commonMain/moko-resources/base/strings.xml'
-      - 'i18n/src/commonMain/moko-resources/base/plurals.xml'
+    paths: &source-paths
+      - 'app/**'
+      - 'core/**'
+      - 'core-metadata/**'
+      - 'data/**'
+      - 'domain/**'
+      - 'i18n/src/commonMain/moko-resources/base/**'
+      - 'presentation-core/**'
+      - 'presentation-widget/**'
+      - 'source-api/**'
+      - 'source-local/**'
+      - 'telemetry/**'
+      - 'buildSrc/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'macrobenchmark/**'
+      - 'gradlew'
+      - 'gradlew.bat'
   push:
     branches:
       - main
+    paths: *source-paths
   workflow_dispatch:
 
 concurrency:

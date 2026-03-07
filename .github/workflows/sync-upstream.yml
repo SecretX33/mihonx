@@ -2,8 +2,8 @@ name: Sync Upstream
 
 on:
   schedule:
-    # Run daily at 04:00 UTC
-    - cron: '0 4 * * *'
+    # Run every Sunday at 07:00 UTC
+    - cron: '0 7 * * 0'
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
           # GITHUB_TOKEN pushes do NOT trigger other workflows.
           # Create a fine-grained PAT with "Contents: Read and write"
           # scoped to this repo and store it as SYNC_PAT.
-          token: ${{ secrets.SYNC_PAT }}
+          token: ${{ secrets.MIHON_BOT_TOKEN }}
 
       - name: Configure git
         run: |
