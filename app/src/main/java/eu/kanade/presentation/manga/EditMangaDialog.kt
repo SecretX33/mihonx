@@ -1,6 +1,10 @@
 package eu.kanade.presentation.manga
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -36,13 +40,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.source.model.SManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EditMangaDialog(
     manga: Manga,
@@ -60,7 +66,7 @@ fun EditMangaDialog(
     var author by remember { mutableStateOf(manga.customAuthor ?: "") }
     var artist by remember { mutableStateOf(manga.customArtist ?: "") }
     var description by remember { mutableStateOf(manga.customDescription ?: "") }
-    var status by remember { mutableLongStateOf(manga.customStatus ?: 0L) }
+    var status by remember { mutableLongStateOf(manga.customStatus ?: manga.status) }
     val tags = remember { mutableStateListOf(*(manga.customGenre ?: manga.genre ?: emptyList()).toTypedArray()) }
     var hasEditedTags by remember { mutableStateOf(manga.customGenre != null) }
     var newTag by remember { mutableStateOf("") }
@@ -75,51 +81,123 @@ fun EditMangaDialog(
                     .fillMaxWidth(),
             ) {
                 // Title
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text(stringResource(MR.strings.title)) },
-                    placeholder = { Text(manga.title) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
+                val titleFocusRequester = remember { FocusRequester() }
+                Box {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text(stringResource(MR.strings.title)) },
+                        placeholder = { Text(manga.title) },
+                        modifier = Modifier.fillMaxWidth().focusRequester(titleFocusRequester),
+                        singleLine = true,
+                    )
+                    if (title.isBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .combinedClickable(
+                                    onClick = { titleFocusRequester.requestFocus() },
+                                    onLongClick = {
+                                        title = manga.title
+                                        titleFocusRequester.requestFocus()
+                                    },
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ),
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Author
-                OutlinedTextField(
-                    value = author,
-                    onValueChange = { author = it },
-                    label = { Text(stringResource(MR.strings.author)) },
-                    placeholder = { Text(manga.author ?: "") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
+                val authorFocusRequester = remember { FocusRequester() }
+                Box {
+                    OutlinedTextField(
+                        value = author,
+                        onValueChange = { author = it },
+                        label = { Text(stringResource(MR.strings.author)) },
+                        placeholder = { Text(manga.author ?: "") },
+                        modifier = Modifier.fillMaxWidth().focusRequester(authorFocusRequester),
+                        singleLine = true,
+                    )
+                    if (author.isBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .combinedClickable(
+                                    onClick = { authorFocusRequester.requestFocus() },
+                                    onLongClick = {
+                                        author = manga.author ?: ""
+                                        authorFocusRequester.requestFocus()
+                                    },
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ),
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Artist
-                OutlinedTextField(
-                    value = artist,
-                    onValueChange = { artist = it },
-                    label = { Text(stringResource(MR.strings.artist)) },
-                    placeholder = { Text(manga.artist ?: "") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
+                val artistFocusRequester = remember { FocusRequester() }
+                Box {
+                    OutlinedTextField(
+                        value = artist,
+                        onValueChange = { artist = it },
+                        label = { Text(stringResource(MR.strings.artist)) },
+                        placeholder = { Text(manga.artist ?: "") },
+                        modifier = Modifier.fillMaxWidth().focusRequester(artistFocusRequester),
+                        singleLine = true,
+                    )
+                    if (artist.isBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .combinedClickable(
+                                    onClick = { artistFocusRequester.requestFocus() },
+                                    onLongClick = {
+                                        artist = manga.artist ?: ""
+                                        artistFocusRequester.requestFocus()
+                                    },
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ),
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Description
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text(stringResource(MR.strings.description)) },
-                    placeholder = { Text(manga.description ?: "") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    maxLines = 5,
-                )
+                val descriptionFocusRequester = remember { FocusRequester() }
+                Box {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text(stringResource(MR.strings.description)) },
+                        placeholder = { Text(manga.description ?: "") },
+                        modifier = Modifier.fillMaxWidth().focusRequester(descriptionFocusRequester),
+                        minLines = 3,
+                        maxLines = 5,
+                    )
+                    if (description.isBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .combinedClickable(
+                                    onClick = { descriptionFocusRequester.requestFocus() },
+                                    onLongClick = {
+                                        description = manga.description ?: ""
+                                        descriptionFocusRequester.requestFocus()
+                                    },
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ),
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -244,7 +322,7 @@ fun EditMangaDialog(
                         artist.ifBlank { null },
                         description.ifBlank { null },
                         if (hasEditedTags) tags.toList().ifEmpty { null } else null,
-                        status.takeIf { it != 0L },
+                        status.takeIf { it != manga.status },
                     )
                     onDismissRequest()
                 },
