@@ -33,7 +33,20 @@ data class Manga(
     val favoriteModifiedAt: Long?,
     val version: Long,
     val notes: String,
+    val customTitle: String? = null,
+    val customAuthor: String? = null,
+    val customArtist: String? = null,
+    val customDescription: String? = null,
+    val customGenre: List<String>? = null,
+    val customStatus: Long? = null,
 ) : Serializable {
+
+    val effectiveTitle: String get() = customTitle ?: title
+    val effectiveAuthor: String? get() = customAuthor ?: author
+    val effectiveArtist: String? get() = customArtist ?: artist
+    val effectiveDescription: String? get() = customDescription ?: description
+    val effectiveGenre: List<String>? get() = customGenre ?: genre
+    val effectiveStatus: Long get() = customStatus ?: status
 
     val expectedNextUpdate: Instant?
         get() = nextUpdate

@@ -28,7 +28,13 @@ CREATE TABLE mangas(
     favorite_modified_at INTEGER,
     version INTEGER NOT NULL DEFAULT 0,
     is_syncing INTEGER NOT NULL DEFAULT 0,
-    notes TEXT NOT NULL DEFAULT ""
+    notes TEXT NOT NULL DEFAULT "",
+    custom_title TEXT,
+    custom_author TEXT,
+    custom_artist TEXT,
+    custom_description TEXT,
+    custom_genre TEXT AS List<String>,
+    custom_status INTEGER
 );
 
 CREATE INDEX library_favorite_index ON mangas(favorite) WHERE favorite = 1;
@@ -194,8 +200,8 @@ AND (
 );
 
 insert:
-INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes);
+INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, custom_title, custom_author, custom_artist, custom_description, custom_genre, custom_status)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :customTitle, :customAuthor, :customArtist, :customDescription, :customGenre, :customStatus);
 
 update:
 UPDATE mangas SET
@@ -221,6 +227,16 @@ UPDATE mangas SET
     version = coalesce(:version, version),
     is_syncing = coalesce(:isSyncing, is_syncing),
     notes = coalesce(:notes, notes)
+WHERE _id = :mangaId;
+
+updateCustomInfo:
+UPDATE mangas SET
+    custom_title = :customTitle,
+    custom_author = :customAuthor,
+    custom_artist = :customArtist,
+    custom_description = :customDescription,
+    custom_genre = :customGenre,
+    custom_status = :customStatus
 WHERE _id = :mangaId;
 
 selectLastInsertedRowId:

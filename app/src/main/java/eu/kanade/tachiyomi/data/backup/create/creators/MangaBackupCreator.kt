@@ -101,4 +101,10 @@ private fun Manga.toBackupManga() =
         version = this.version,
         notes = this.notes,
         initialized = this.initialized,
+        customTitle = this.customTitle ?: "",
+        customAuthor = this.customAuthor ?: "",
+        customArtist = this.customArtist ?: "",
+        customDescription = this.customDescription ?: "",
+        customGenre = this.customGenre ?: emptyList(),
+        customStatus = this.customStatus?.toInt() ?: 0,
     )

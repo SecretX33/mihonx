@@ -366,10 +366,10 @@ private fun MangaAndSourceTitlesLarge(
         )
         Spacer(modifier = Modifier.height(16.dp))
         MangaContentInfo(
-            title = manga.title,
-            author = manga.author,
-            artist = manga.artist,
-            status = manga.status,
+            title = manga.effectiveTitle,
+            author = manga.effectiveAuthor,
+            artist = manga.effectiveArtist,
+            status = manga.effectiveStatus,
             sourceName = sourceName,
             isStubSource = isStubSource,
             doSearch = doSearch,
@@ -409,10 +409,10 @@ private fun MangaAndSourceTitlesSmall(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             MangaContentInfo(
-                title = manga.title,
-                author = manga.author,
-                artist = manga.artist,
-                status = manga.status,
+                title = manga.effectiveTitle,
+                author = manga.effectiveAuthor,
+                artist = manga.effectiveArtist,
+                status = manga.effectiveStatus,
                 sourceName = sourceName,
                 isStubSource = isStubSource,
                 doSearch = doSearch,

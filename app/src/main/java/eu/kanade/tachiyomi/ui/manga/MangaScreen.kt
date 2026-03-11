@@ -31,6 +31,7 @@ import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.manga.ChapterSettingsDialog
 import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.EditCoverAction
+import eu.kanade.presentation.manga.EditMangaDialog
 import eu.kanade.presentation.manga.MangaScreen
 import eu.kanade.presentation.manga.components.DeleteChaptersDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
@@ -162,6 +163,7 @@ class MangaScreen(
                 navigator.push(MigrationConfigScreen(successState.manga.id))
             }.takeIf { successState.manga.favorite },
             onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
+            onEditInfoClicked = screenModel::showEditMangaDialog.takeIf { successState.manga.favorite },
             onMultiBookmarkClicked = screenModel::bookmarkChapters,
             onMultiMarkAsReadClicked = screenModel::markChaptersRead,
             onMarkPreviousAsReadClicked = screenModel::markPreviousChapterRead,
@@ -274,6 +276,22 @@ class MangaScreen(
                     onDismissRequest = onDismissRequest,
                     onValueChanged = { interval: Int -> screenModel.setFetchInterval(dialog.manga, interval) }
                         .takeIf { screenModel.isUpdateIntervalEnabled },
+                )
+            }
+            MangaScreenModel.Dialog.EditManga -> {
+                EditMangaDialog(
+                    manga = successState.manga,
+                    onDismissRequest = onDismissRequest,
+                    onSave = { customTitle, customAuthor, customArtist, customDescription, customGenre, customStatus ->
+                        screenModel.saveCustomMangaInfo(
+                            customTitle = customTitle,
+                            customAuthor = customAuthor,
+                            customArtist = customArtist,
+                            customDescription = customDescription,
+                            customGenre = customGenre,
+                            customStatus = customStatus,
+                        )
+                    },
                 )
             }
         }

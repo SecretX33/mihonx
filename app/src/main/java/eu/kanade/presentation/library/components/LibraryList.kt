@@ -45,7 +45,7 @@ internal fun LibraryList(
             val manga = libraryItem.libraryManga.manga
             MangaListItem(
                 isSelected = manga.id in selection,
-                title = manga.title,
+                title = manga.effectiveTitle,
                 coverData = MangaCover(
                     mangaId = manga.id,
                     sourceId = manga.source,
