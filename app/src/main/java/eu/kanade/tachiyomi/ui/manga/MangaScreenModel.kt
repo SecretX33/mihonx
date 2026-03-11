@@ -77,6 +77,7 @@ import tachiyomi.domain.chapter.service.calculateChapterGap
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
+import tachiyomi.domain.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.manga.interactor.GetMangaWithChapters
 import tachiyomi.domain.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.manga.model.Manga
@@ -120,6 +121,7 @@ class MangaScreenModel(
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
+    private val setCustomMangaInfo: SetCustomMangaInfo = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
@@ -1108,6 +1110,7 @@ class MangaScreenModel(
         data object SettingsSheet : Dialog
         data object TrackSheet : Dialog
         data object FullCover : Dialog
+        data object EditManga : Dialog
     }
 
     fun dismissDialog() {
@@ -1133,6 +1136,31 @@ class MangaScreenModel(
     fun showMigrateDialog(duplicate: Manga) {
         val manga = successState?.manga ?: return
         updateSuccessState { it.copy(dialog = Dialog.Migrate(target = manga, current = duplicate)) }
+    }
+
+    fun showEditMangaDialog() {
+        updateSuccessState { it.copy(dialog = Dialog.EditManga) }
+    }
+
+    fun saveCustomMangaInfo(
+        customTitle: String?,
+        customAuthor: String?,
+        customArtist: String?,
+        customDescription: String?,
+        customGenre: List<String>?,
+        customStatus: Long?,
+    ) {
+        screenModelScope.launchIO {
+            setCustomMangaInfo.await(
+                mangaId = mangaId,
+                customTitle = customTitle,
+                customAuthor = customAuthor,
+                customArtist = customArtist,
+                customDescription = customDescription,
+                customGenre = customGenre,
+                customStatus = customStatus,
+            )
+        }
     }
 
     fun setExcludedScanlators(excludedScanlators: Set<String>) {

@@ -101,6 +101,12 @@ class MangaRestorer(
             status = newer.status,
             initialized = this.initialized || newer.initialized,
             version = newer.version,
+            customTitle = newer.customTitle ?: this.customTitle,
+            customAuthor = newer.customAuthor ?: this.customAuthor,
+            customArtist = newer.customArtist ?: this.customArtist,
+            customDescription = newer.customDescription ?: this.customDescription,
+            customGenre = newer.customGenre ?: this.customGenre,
+            customStatus = newer.customStatus ?: this.customStatus,
         )
     }
 
@@ -130,6 +136,15 @@ class MangaRestorer(
                 version = manga.version,
                 isSyncing = 1,
                 notes = manga.notes,
+            )
+            mangasQueries.updateCustomInfo(
+                mangaId = manga.id,
+                customTitle = manga.customTitle,
+                customAuthor = manga.customAuthor,
+                customArtist = manga.customArtist,
+                customDescription = manga.customDescription,
+                customGenre = manga.customGenre,
+                customStatus = manga.customStatus,
             )
         }
         return manga
@@ -261,6 +276,12 @@ class MangaRestorer(
                 updateStrategy = manga.updateStrategy,
                 version = manga.version,
                 notes = manga.notes,
+                customTitle = manga.customTitle,
+                customAuthor = manga.customAuthor,
+                customArtist = manga.customArtist,
+                customDescription = manga.customDescription,
+                customGenre = manga.customGenre,
+                customStatus = manga.customStatus,
             )
             mangasQueries.selectLastInsertedRowId()
         }

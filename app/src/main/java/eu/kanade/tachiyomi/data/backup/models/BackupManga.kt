@@ -43,6 +43,14 @@ data class BackupManga(
     @ProtoNumber(109) var version: Long = 0,
     @ProtoNumber(110) var notes: String = "",
     @ProtoNumber(111) var initialized: Boolean = false,
+    // Custom manga info (J2K-compatible proto numbers)
+    @ProtoNumber(602) var customStatus: Int = 0,
+    @ProtoNumber(800) var customTitle: String = "",
+    @ProtoNumber(801) var customArtist: String = "",
+    @ProtoNumber(802) var customAuthor: String = "",
+    // @ProtoNumber(803) intentionally skipped (J2K compatibility)
+    @ProtoNumber(804) var customDescription: String = "",
+    @ProtoNumber(805) var customGenre: List<String> = emptyList(),
 ) {
     fun getMangaImpl(): Manga {
         return Manga.create().copy(
@@ -65,6 +73,12 @@ data class BackupManga(
             version = this@BackupManga.version,
             notes = this@BackupManga.notes,
             initialized = this@BackupManga.initialized,
+            customTitle = this@BackupManga.customTitle.takeIf { it.isNotBlank() },
+            customAuthor = this@BackupManga.customAuthor.takeIf { it.isNotBlank() },
+            customArtist = this@BackupManga.customArtist.takeIf { it.isNotBlank() },
+            customDescription = this@BackupManga.customDescription.takeIf { it.isNotBlank() },
+            customGenre = this@BackupManga.customGenre.takeIf { it.isNotEmpty() },
+            customStatus = this@BackupManga.customStatus.toLong().takeIf { it != 0L },
         )
     }
 }
