@@ -1,8 +1,8 @@
 package eu.kanade.presentation.manga
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,13 +43,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.source.model.SManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
+import kotlinx.coroutines.withTimeoutOrNull
 import tachiyomi.presentation.core.i18n.stringResource
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EditMangaDialog(
     manga: Manga,
@@ -95,15 +98,20 @@ fun EditMangaDialog(
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .combinedClickable(
-                                    onClick = { titleFocusRequester.requestFocus() },
-                                    onLongClick = {
-                                        title = manga.title
-                                        titleFocusRequester.requestFocus()
-                                    },
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                ),
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        val up = withTimeoutOrNull(750) {
+                                            waitForUpOrCancellation()
+                                        }
+                                        if (up == null) {
+                                            title = manga.title
+                                            titleFocusRequester.requestFocus()
+                                        } else {
+                                            titleFocusRequester.requestFocus()
+                                        }
+                                    }
+                                },
                         )
                     }
                 }
@@ -125,15 +133,20 @@ fun EditMangaDialog(
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .combinedClickable(
-                                    onClick = { authorFocusRequester.requestFocus() },
-                                    onLongClick = {
-                                        author = manga.author ?: ""
-                                        authorFocusRequester.requestFocus()
-                                    },
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                ),
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        val up = withTimeoutOrNull(750) {
+                                            waitForUpOrCancellation()
+                                        }
+                                        if (up == null) {
+                                            author = manga.author ?: ""
+                                            authorFocusRequester.requestFocus()
+                                        } else {
+                                            authorFocusRequester.requestFocus()
+                                        }
+                                    }
+                                },
                         )
                     }
                 }
@@ -155,15 +168,20 @@ fun EditMangaDialog(
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .combinedClickable(
-                                    onClick = { artistFocusRequester.requestFocus() },
-                                    onLongClick = {
-                                        artist = manga.artist ?: ""
-                                        artistFocusRequester.requestFocus()
-                                    },
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                ),
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        val up = withTimeoutOrNull(750) {
+                                            waitForUpOrCancellation()
+                                        }
+                                        if (up == null) {
+                                            artist = manga.artist ?: ""
+                                            artistFocusRequester.requestFocus()
+                                        } else {
+                                            artistFocusRequester.requestFocus()
+                                        }
+                                    }
+                                },
                         )
                     }
                 }
@@ -186,15 +204,20 @@ fun EditMangaDialog(
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .combinedClickable(
-                                    onClick = { descriptionFocusRequester.requestFocus() },
-                                    onLongClick = {
-                                        description = manga.description ?: ""
-                                        descriptionFocusRequester.requestFocus()
-                                    },
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                ),
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        val up = withTimeoutOrNull(750) {
+                                            waitForUpOrCancellation()
+                                        }
+                                        if (up == null) {
+                                            description = manga.description ?: ""
+                                            descriptionFocusRequester.requestFocus()
+                                        } else {
+                                            descriptionFocusRequester.requestFocus()
+                                        }
+                                    }
+                                },
                         )
                     }
                 }
@@ -204,13 +227,13 @@ fun EditMangaDialog(
                 // Status dropdown
                 var statusExpanded by remember { mutableStateOf(false) }
                 val statusOptions = listOf(
-                    0L to MR.strings.unknown,
                     SManga.ONGOING.toLong() to MR.strings.ongoing,
                     SManga.COMPLETED.toLong() to MR.strings.completed,
                     SManga.LICENSED.toLong() to MR.strings.licensed,
                     SManga.PUBLISHING_FINISHED.toLong() to MR.strings.publishing_finished,
                     SManga.CANCELLED.toLong() to MR.strings.cancelled,
                     SManga.ON_HIATUS.toLong() to MR.strings.on_hiatus,
+                    0L to MR.strings.unknown,
                 )
                 ExposedDropdownMenuBox(
                     expanded = statusExpanded,
@@ -238,6 +261,18 @@ fun EditMangaDialog(
                                 onClick = {
                                     status = value
                                     statusExpanded = false
+                                },
+                                trailingIcon = if (value == manga.status) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Public,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                } else {
+                                    null
                                 },
                             )
                         }
@@ -308,6 +343,7 @@ fun EditMangaDialog(
                         tags.addAll(manga.genre ?: emptyList())
                         hasEditedTags = false
                     },
+                    enabled = hasEditedTags,
                 ) {
                     Text(stringResource(MR.strings.reset_to_default))
                 }
