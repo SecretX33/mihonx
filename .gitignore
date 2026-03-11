@@ -2,12 +2,14 @@
 .gradle
 .kotlin
 build
+.claude
 
 # IDE files
 *.iml
 .idea/*
 !.idea/icon.svg
 /captures
+/docs
 
 # Configuration files
 local.properties
