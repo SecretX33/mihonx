@@ -125,6 +125,7 @@ class MigrateMangaUseCase(
                 id = current.id,
                 favorite = false,
                 dateAdded = 0,
+                notes = "",
                 customInfo = CustomMangaInfo.ClearAll,
             )
                 .takeIf { replace }
