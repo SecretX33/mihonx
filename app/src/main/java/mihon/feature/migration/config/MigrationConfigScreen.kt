@@ -146,7 +146,9 @@ class MigrationConfigScreen(private val mangaIds: Collection<Long>) : Screen() {
                 if (selectedSources.isNotEmpty()) {
                     SmallExtendedFloatingActionButton(
                         text = { Text(text = stringResource(MR.strings.migrationConfigScreen_continueButtonText)) },
-                        icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null) },
+                        icon = {
+                            Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null)
+                        },
                         onClick = {
                             screenModel.saveSources()
                             continueMigration(openSheet = true, extraSearchQuery = null)

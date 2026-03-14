@@ -176,7 +176,9 @@ class MigrateMangaUseCase(
                         genre = current.customGenre,
                         status = current.customStatus,
                     )
-                } else CustomMangaInfo.KeepAll,
+                } else {
+                    CustomMangaInfo.KeepAll
+                },
             )
 
             updateManga.awaitAll(listOfNotNull(currentMangaUpdate, targetMangaUpdate))

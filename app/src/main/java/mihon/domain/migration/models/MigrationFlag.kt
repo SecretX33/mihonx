@@ -7,7 +7,8 @@ enum class MigrationFlag(val flag: Int) {
     // 0b00100 was used for manga trackers
     CUSTOM_INFO(0b01000), // previously custom cover
     NOTES(0b100000),
-    REMOVE_DOWNLOAD(0b10000);
+    REMOVE_DOWNLOAD(0b10000),
+    ;
 
     companion object {
         fun fromBit(bit: Int): Set<MigrationFlag> {
