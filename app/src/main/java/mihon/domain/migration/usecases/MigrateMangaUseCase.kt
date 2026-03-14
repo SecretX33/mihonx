@@ -117,17 +117,15 @@ class MigrateMangaUseCase(
             }
 
             // Migrate custom series info (cover, notes, text metadata)
-            if (MigrationFlag.CUSTOM_INFO in flags) {
-                if (current.hasCustomCover()) {
-                    coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
-                }
+            if (MigrationFlag.CUSTOM_INFO in flags && current.hasCustomCover()) {
+                coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
             }
 
             val currentMangaUpdate = MangaUpdate(
                 id = current.id,
                 favorite = false,
                 dateAdded = 0,
-                customInfo = CustomMangaInfo(),
+                customInfo = CustomMangaInfo.ClearAll,
             )
                 .takeIf { replace }
             val targetMangaUpdate = MangaUpdate(
@@ -136,9 +134,9 @@ class MigrateMangaUseCase(
                 chapterFlags = current.chapterFlags,
                 viewerFlags = current.viewerFlags,
                 dateAdded = if (replace) current.dateAdded else Instant.now().toEpochMilli(),
-                notes = if (MigrationFlag.CUSTOM_INFO in flags) current.notes else null,
+                notes = if (MigrationFlag.NOTES in flags) current.notes else null,
                 customInfo = if (MigrationFlag.CUSTOM_INFO in flags) {
-                    CustomMangaInfo(
+                    CustomMangaInfo.Set(
                         title = current.customTitle,
                         author = current.customAuthor,
                         artist = current.customArtist,
@@ -146,7 +144,7 @@ class MigrateMangaUseCase(
                         genre = current.customGenre,
                         status = current.customStatus,
                     )
-                } else null,
+                } else CustomMangaInfo.KeepAll,
             )
 
             updateManga.awaitAll(listOfNotNull(currentMangaUpdate, targetMangaUpdate))

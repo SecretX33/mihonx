@@ -8,6 +8,7 @@ import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.UpdateStrategyColumnAdapter
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
 import tachiyomi.domain.manga.repository.MangaRepository
@@ -155,6 +156,7 @@ class MangaRepositoryImpl(
     private suspend fun partialUpdate(vararg mangaUpdates: MangaUpdate) {
         handler.await(inTransaction = true) {
             mangaUpdates.forEach { value ->
+                val customInfo = value.customInfo
                 mangasQueries.update(
                     source = value.source,
                     url = value.url,
@@ -179,18 +181,14 @@ class MangaRepositoryImpl(
                     version = value.version,
                     isSyncing = 0,
                     notes = value.notes,
+                    updateCustomInfo = if (customInfo != CustomMangaInfo.KeepAll) 1L else 0L,
+                    customTitle = (customInfo as? CustomMangaInfo.Set)?.title,
+                    customAuthor = (customInfo as? CustomMangaInfo.Set)?.author,
+                    customArtist = (customInfo as? CustomMangaInfo.Set)?.artist,
+                    customDescription = (customInfo as? CustomMangaInfo.Set)?.description,
+                    customGenre = (customInfo as? CustomMangaInfo.Set)?.genre,
+                    customStatus = (customInfo as? CustomMangaInfo.Set)?.status,
                 )
-                value.customInfo?.let {
-                    mangasQueries.updateCustomInfo(
-                        customTitle = it.title,
-                        customAuthor = it.author,
-                        customArtist = it.artist,
-                        customDescription = it.description,
-                        customGenre = it.genre,
-                        customStatus = it.status,
-                        mangaId = value.id,
-                    )
-                }
             }
         }
     }

@@ -136,12 +136,12 @@ private class MigrateDialogScreenModel(
                 val applicable = when (it) {
                     MigrationFlag.CHAPTER -> true
                     MigrationFlag.CATEGORY -> true
-                    MigrationFlag.REMOVE_DOWNLOAD -> downloadManager.getDownloadCount(current) > 0
                     MigrationFlag.CUSTOM_INFO -> current.hasCustomCover(coverCache) ||
-                        current.notes.isNotBlank() ||
                         current.customTitle != null || current.customAuthor != null ||
                         current.customArtist != null || current.customDescription != null ||
                         current.customGenre != null || current.customStatus != null
+                    MigrationFlag.NOTES -> current.notes.isNotBlank()
+                    MigrationFlag.REMOVE_DOWNLOAD -> downloadManager.getDownloadCount(current) > 0
                 }
                 if (applicable) add(it)
             }

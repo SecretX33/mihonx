@@ -136,9 +136,7 @@ class MangaRestorer(
                 version = manga.version,
                 isSyncing = 1,
                 notes = manga.notes,
-            )
-            mangasQueries.updateCustomInfo(
-                mangaId = manga.id,
+                updateCustomInfo = 1L,
                 customTitle = manga.customTitle,
                 customAuthor = manga.customAuthor,
                 customArtist = manga.customArtist,

@@ -5,9 +5,8 @@ enum class MigrationFlag(val flag: Int) {
     CATEGORY(0b00010),
 
     // 0b00100 was used for manga trackers
-    // 0b01000 was used for custom cover
-    // 0b100000 was used for notes
-    CUSTOM_INFO(0b01000),
+    CUSTOM_INFO(0b01000), // previously custom cover
+    NOTES(0b100000),
     REMOVE_DOWNLOAD(0b10000);
 
     companion object {

@@ -324,7 +324,7 @@ class MangaScreenModel(
                     if (manga.removeCovers() != manga) {
                         updateManga.awaitUpdateCoverLastModified(manga.id)
                     }
-                    updateManga.await(MangaUpdate(id = manga.id, customInfo = CustomMangaInfo()))
+                    updateManga.await(MangaUpdate(id = manga.id, customInfo = CustomMangaInfo.ClearAll))
                     withUIContext { onRemoved() }
                 }
             } else {
@@ -1155,7 +1155,7 @@ class MangaScreenModel(
             updateManga.await(
                 MangaUpdate(
                     id = mangaId,
-                    customInfo = CustomMangaInfo(
+                    customInfo = CustomMangaInfo.Set(
                         title = customTitle,
                         author = customAuthor,
                         artist = customArtist,

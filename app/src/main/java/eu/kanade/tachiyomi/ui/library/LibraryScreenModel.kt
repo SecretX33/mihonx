@@ -552,7 +552,7 @@ class LibraryScreenModel(
                     MangaUpdate(
                         favorite = false,
                         id = it.id,
-                        customInfo = CustomMangaInfo(),
+                        customInfo = CustomMangaInfo.ClearAll,
                     )
                 }
                 updateManga.awaitAll(toDelete)
