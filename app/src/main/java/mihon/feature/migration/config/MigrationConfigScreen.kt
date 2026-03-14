@@ -94,7 +94,7 @@ class MigrationConfigScreen(private val mangaIds: Collection<Long>) : Screen() {
             } else {
                 MigrateSearchScreen(mangaId)
             }
-            navigator.replace(screen)
+            navigator.push(screen)
         }
 
         if (state.isLoading) {
@@ -143,15 +143,19 @@ class MigrationConfigScreen(private val mangaIds: Collection<Long>) : Screen() {
                 )
             },
             floatingActionButton = {
-                SmallExtendedFloatingActionButton(
-                    text = { Text(text = stringResource(MR.strings.migrationConfigScreen_continueButtonText)) },
-                    icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null) },
-                    onClick = {
-                        screenModel.saveSources()
-                        continueMigration(openSheet = true, extraSearchQuery = null)
-                    },
-                    expanded = lazyListState.shouldExpandFAB(),
-                )
+                if (selectedSources.isNotEmpty()) {
+                    SmallExtendedFloatingActionButton(
+                        text = { Text(text = stringResource(MR.strings.migrationConfigScreen_continueButtonText)) },
+                        icon = {
+                            Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null)
+                        },
+                        onClick = {
+                            screenModel.saveSources()
+                            continueMigration(openSheet = true, extraSearchQuery = null)
+                        },
+                        expanded = lazyListState.shouldExpandFAB(),
+                    )
+                }
             },
         ) { contentPadding ->
             val reorderableState = rememberReorderableLazyListState(lazyListState, contentPadding) { from, to ->

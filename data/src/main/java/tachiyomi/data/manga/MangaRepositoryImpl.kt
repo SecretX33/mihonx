@@ -7,6 +7,7 @@ import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.UpdateStrategyColumnAdapter
 import tachiyomi.domain.library.model.LibraryManga
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
@@ -152,37 +153,10 @@ class MangaRepositoryImpl(
         }
     }
 
-    override suspend fun updateCustomInfo(
-        mangaId: Long,
-        customTitle: String?,
-        customAuthor: String?,
-        customArtist: String?,
-        customDescription: String?,
-        customGenre: List<String>?,
-        customStatus: Long?,
-    ): Boolean {
-        return try {
-            handler.await {
-                mangasQueries.updateCustomInfo(
-                    mangaId = mangaId,
-                    customTitle = customTitle,
-                    customAuthor = customAuthor,
-                    customArtist = customArtist,
-                    customDescription = customDescription,
-                    customGenre = customGenre,
-                    customStatus = customStatus,
-                )
-            }
-            true
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e)
-            false
-        }
-    }
-
     private suspend fun partialUpdate(vararg mangaUpdates: MangaUpdate) {
         handler.await(inTransaction = true) {
             mangaUpdates.forEach { value ->
+                val customInfo = value.customInfo
                 mangasQueries.update(
                     source = value.source,
                     url = value.url,
@@ -207,6 +181,13 @@ class MangaRepositoryImpl(
                     version = value.version,
                     isSyncing = 0,
                     notes = value.notes,
+                    updateCustomInfo = if (customInfo != CustomMangaInfo.KeepAll) 1L else 0L,
+                    customTitle = (customInfo as? CustomMangaInfo.Set)?.title,
+                    customAuthor = (customInfo as? CustomMangaInfo.Set)?.author,
+                    customArtist = (customInfo as? CustomMangaInfo.Set)?.artist,
+                    customDescription = (customInfo as? CustomMangaInfo.Set)?.description,
+                    customGenre = (customInfo as? CustomMangaInfo.Set)?.genre,
+                    customStatus = (customInfo as? CustomMangaInfo.Set)?.status,
                 )
             }
         }

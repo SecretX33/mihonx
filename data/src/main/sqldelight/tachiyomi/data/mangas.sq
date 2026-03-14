@@ -226,17 +226,13 @@ UPDATE mangas SET
     calculate_interval = coalesce(:calculateInterval, calculate_interval),
     version = coalesce(:version, version),
     is_syncing = coalesce(:isSyncing, is_syncing),
-    notes = coalesce(:notes, notes)
-WHERE _id = :mangaId;
-
-updateCustomInfo:
-UPDATE mangas SET
-    custom_title = :customTitle,
-    custom_author = :customAuthor,
-    custom_artist = :customArtist,
-    custom_description = :customDescription,
-    custom_genre = :customGenre,
-    custom_status = :customStatus
+    notes = coalesce(:notes, notes),
+    custom_title = CASE WHEN :updateCustomInfo = 1 THEN :customTitle ELSE custom_title END,
+    custom_author = CASE WHEN :updateCustomInfo = 1 THEN :customAuthor ELSE custom_author END,
+    custom_artist = CASE WHEN :updateCustomInfo = 1 THEN :customArtist ELSE custom_artist END,
+    custom_description = CASE WHEN :updateCustomInfo = 1 THEN :customDescription ELSE custom_description END,
+    custom_genre = CASE WHEN :updateCustomInfo = 1 THEN :customGenre ELSE custom_genre END,
+    custom_status = CASE WHEN :updateCustomInfo = 1 THEN :customStatus ELSE custom_status END
 WHERE _id = :mangaId;
 
 selectLastInsertedRowId:

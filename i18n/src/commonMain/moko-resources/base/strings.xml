@@ -1057,4 +1057,5 @@
     <string name="migrationListScreen.migrateDialog.cancelLabel">Cancel</string>
     <string name="migrationListScreen.progressDialog.cancelLabel">Cancel</string>
     <string name="migrationListScreen.matchWithoutChapterToast">No chapters found, this entry cannot be used for migration</string>
+    <string name="long_press_to_fill_default">Long pressed to fill in the default value</string>
 </resources>

@@ -1,5 +1,6 @@
 package eu.kanade.presentation.manga
 
+import android.widget.Toast
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -27,6 +28,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -44,9 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.source.model.SManga
-import kotlinx.coroutines.withTimeoutOrNull
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -65,14 +67,18 @@ fun EditMangaDialog(
         customStatus: Long?,
     ) -> Unit,
 ) {
-    var title by remember { mutableStateOf(manga.customTitle ?: "") }
-    var author by remember { mutableStateOf(manga.customAuthor ?: "") }
-    var artist by remember { mutableStateOf(manga.customArtist ?: "") }
-    var description by remember { mutableStateOf(manga.customDescription ?: "") }
+    var title by remember { mutableStateOf(manga.customTitle.orEmpty()) }
+    var author by remember { mutableStateOf(manga.customAuthor.orEmpty()) }
+    var artist by remember { mutableStateOf(manga.customArtist.orEmpty()) }
+    var description by remember { mutableStateOf(manga.customDescription.orEmpty()) }
     var status by remember { mutableLongStateOf(manga.customStatus ?: manga.status) }
     val tags = remember { mutableStateListOf(*(manga.customGenre ?: manga.genre ?: emptyList()).toTypedArray()) }
     var hasEditedTags by remember { mutableStateOf(manga.customGenre != null) }
     var newTag by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+    val longPressToFillMessage = stringResource(MR.strings.long_press_to_fill_default)
+    val holdTimeoutMs = 1000L
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -90,9 +96,22 @@ fun EditMangaDialog(
                         value = title,
                         onValueChange = { title = it },
                         label = { Text(stringResource(MR.strings.title)) },
-                        placeholder = { Text(manga.title) },
+                        placeholder = { Text(manga.title.trimIfTooLong()) },
                         modifier = Modifier.fillMaxWidth().focusRequester(titleFocusRequester),
                         singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        trailingIcon = if (title.isNotBlank()) {
+                            {
+                                IconButton(onClick = { title = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = stringResource(MR.strings.action_reset),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                     if (title.isBlank()) {
                         Box(
@@ -101,13 +120,16 @@ fun EditMangaDialog(
                                 .pointerInput(Unit) {
                                     awaitEachGesture {
                                         awaitFirstDown(requireUnconsumed = false)
-                                        val up = withTimeoutOrNull(750) {
+                                        val holdStart = System.currentTimeMillis()
+                                        val up = withTimeoutOrNull(holdTimeoutMs) {
                                             waitForUpOrCancellation()
                                         }
-                                        if (up == null) {
+                                        val holdDuration = System.currentTimeMillis() - holdStart
+                                        if (up == null && holdDuration >= holdTimeoutMs - 100L) {
                                             title = manga.title
                                             titleFocusRequester.requestFocus()
-                                        } else {
+                                            Toast.makeText(context, longPressToFillMessage, Toast.LENGTH_SHORT).show()
+                                        } else if (up != null) {
                                             titleFocusRequester.requestFocus()
                                         }
                                     }
@@ -125,9 +147,22 @@ fun EditMangaDialog(
                         value = author,
                         onValueChange = { author = it },
                         label = { Text(stringResource(MR.strings.author)) },
-                        placeholder = { Text(manga.author ?: "") },
+                        placeholder = { Text((manga.author.orEmpty()).trimIfTooLong()) },
                         modifier = Modifier.fillMaxWidth().focusRequester(authorFocusRequester),
                         singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        trailingIcon = if (author.isNotBlank()) {
+                            {
+                                IconButton(onClick = { author = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = stringResource(MR.strings.action_reset),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                     if (author.isBlank()) {
                         Box(
@@ -136,13 +171,16 @@ fun EditMangaDialog(
                                 .pointerInput(Unit) {
                                     awaitEachGesture {
                                         awaitFirstDown(requireUnconsumed = false)
-                                        val up = withTimeoutOrNull(750) {
+                                        val holdStart = System.currentTimeMillis()
+                                        val up = withTimeoutOrNull(holdTimeoutMs) {
                                             waitForUpOrCancellation()
                                         }
-                                        if (up == null) {
-                                            author = manga.author ?: ""
+                                        val holdDuration = System.currentTimeMillis() - holdStart
+                                        if (up == null && holdDuration >= holdTimeoutMs - 100L) {
+                                            author = manga.author.orEmpty()
                                             authorFocusRequester.requestFocus()
-                                        } else {
+                                            Toast.makeText(context, longPressToFillMessage, Toast.LENGTH_SHORT).show()
+                                        } else if (up != null) {
                                             authorFocusRequester.requestFocus()
                                         }
                                     }
@@ -160,9 +198,22 @@ fun EditMangaDialog(
                         value = artist,
                         onValueChange = { artist = it },
                         label = { Text(stringResource(MR.strings.artist)) },
-                        placeholder = { Text(manga.artist ?: "") },
+                        placeholder = { Text(manga.artist.orEmpty().trimIfTooLong()) },
                         modifier = Modifier.fillMaxWidth().focusRequester(artistFocusRequester),
                         singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        trailingIcon = if (artist.isNotBlank()) {
+                            {
+                                IconButton(onClick = { artist = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = stringResource(MR.strings.action_reset),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                     if (artist.isBlank()) {
                         Box(
@@ -171,13 +222,16 @@ fun EditMangaDialog(
                                 .pointerInput(Unit) {
                                     awaitEachGesture {
                                         awaitFirstDown(requireUnconsumed = false)
-                                        val up = withTimeoutOrNull(750) {
+                                        val holdStart = System.currentTimeMillis()
+                                        val up = withTimeoutOrNull(holdTimeoutMs) {
                                             waitForUpOrCancellation()
                                         }
-                                        if (up == null) {
-                                            artist = manga.artist ?: ""
+                                        val holdDuration = System.currentTimeMillis() - holdStart
+                                        if (up == null && holdDuration >= holdTimeoutMs - 100L) {
+                                            artist = manga.artist.orEmpty()
                                             artistFocusRequester.requestFocus()
-                                        } else {
+                                            Toast.makeText(context, longPressToFillMessage, Toast.LENGTH_SHORT).show()
+                                        } else if (up != null) {
                                             artistFocusRequester.requestFocus()
                                         }
                                     }
@@ -195,10 +249,23 @@ fun EditMangaDialog(
                         value = description,
                         onValueChange = { description = it },
                         label = { Text(stringResource(MR.strings.description)) },
-                        placeholder = { Text(manga.description ?: "") },
+                        placeholder = { Text((manga.description.orEmpty()).trimIfTooLong()) },
                         modifier = Modifier.fillMaxWidth().focusRequester(descriptionFocusRequester),
                         minLines = 3,
                         maxLines = 5,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        trailingIcon = if (description.isNotBlank()) {
+                            {
+                                IconButton(onClick = { description = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = stringResource(MR.strings.action_reset),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                     if (description.isBlank()) {
                         Box(
@@ -207,13 +274,16 @@ fun EditMangaDialog(
                                 .pointerInput(Unit) {
                                     awaitEachGesture {
                                         awaitFirstDown(requireUnconsumed = false)
-                                        val up = withTimeoutOrNull(750) {
+                                        val holdStart = System.currentTimeMillis()
+                                        val up = withTimeoutOrNull(holdTimeoutMs) {
                                             waitForUpOrCancellation()
                                         }
-                                        if (up == null) {
-                                            description = manga.description ?: ""
+                                        val holdDuration = System.currentTimeMillis() - holdStart
+                                        if (up == null && holdDuration >= holdTimeoutMs - 100L) {
+                                            description = manga.description.orEmpty()
                                             descriptionFocusRequester.requestFocus()
-                                        } else {
+                                            Toast.makeText(context, longPressToFillMessage, Toast.LENGTH_SHORT).show()
+                                        } else if (up != null) {
                                             descriptionFocusRequester.requestFocus()
                                         }
                                     }
@@ -320,6 +390,19 @@ fun EditMangaDialog(
                         label = { Text(stringResource(MR.strings.add_tag)) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        trailingIcon = if (newTag.isNotBlank()) {
+                            {
+                                IconButton(onClick = { newTag = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = stringResource(MR.strings.action_reset),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
@@ -372,4 +455,9 @@ fun EditMangaDialog(
             }
         },
     )
+}
+
+private fun String.trimIfTooLong(): String {
+    val maxLength = 50
+    return if (length > maxLength) take(maxLength).trim() + "…" else this
 }

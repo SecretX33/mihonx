@@ -78,9 +78,10 @@ import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.manga.interactor.GetMangaWithChapters
-import tachiyomi.domain.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.manga.interactor.SetMangaChapterFlags
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
 import tachiyomi.domain.manga.model.applyFilter
 import tachiyomi.domain.manga.repository.MangaRepository
@@ -121,7 +122,6 @@ class MangaScreenModel(
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
-    private val setCustomMangaInfo: SetCustomMangaInfo = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
@@ -320,10 +320,11 @@ class MangaScreenModel(
             if (isFavorited) {
                 // Remove from library
                 if (updateManga.awaitUpdateFavorite(manga.id, false)) {
-                    // Remove covers and update last modified in db
+                    // Remove covers, update last modified in db and clear custom metadata
                     if (manga.removeCovers() != manga) {
                         updateManga.awaitUpdateCoverLastModified(manga.id)
                     }
+                    updateManga.await(MangaUpdate(id = manga.id, customInfo = CustomMangaInfo.ClearAll))
                     withUIContext { onRemoved() }
                 }
             } else {
@@ -1151,14 +1152,18 @@ class MangaScreenModel(
         customStatus: Long?,
     ) {
         screenModelScope.launchIO {
-            setCustomMangaInfo.await(
-                mangaId = mangaId,
-                customTitle = customTitle,
-                customAuthor = customAuthor,
-                customArtist = customArtist,
-                customDescription = customDescription,
-                customGenre = customGenre,
-                customStatus = customStatus,
+            updateManga.await(
+                MangaUpdate(
+                    id = mangaId,
+                    customInfo = CustomMangaInfo.Set(
+                        title = customTitle,
+                        author = customAuthor,
+                        artist = customArtist,
+                        description = customDescription,
+                        genre = customGenre,
+                        status = customStatus,
+                    ),
+                ),
             )
         }
     }

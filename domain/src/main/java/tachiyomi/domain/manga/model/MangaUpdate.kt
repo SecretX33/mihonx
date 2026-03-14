@@ -2,6 +2,24 @@ package tachiyomi.domain.manga.model
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 
+sealed interface CustomMangaInfo {
+    /** Leave all custom columns exactly as they are (default). */
+    data object KeepAll : CustomMangaInfo
+
+    /** Explicitly clear all custom columns (set all to `NULL`). */
+    data object ClearAll : CustomMangaInfo
+
+    /** Write specific values; null inner field = clear that column. */
+    data class Set(
+        val title: String?,
+        val author: String?,
+        val artist: String?,
+        val description: String?,
+        val genre: List<String>?,
+        val status: Long?,
+    ) : CustomMangaInfo
+}
+
 data class MangaUpdate(
     val id: Long,
     val source: Long? = null,
@@ -25,6 +43,7 @@ data class MangaUpdate(
     val initialized: Boolean? = null,
     val version: Long? = null,
     val notes: String? = null,
+    val customInfo: CustomMangaInfo = CustomMangaInfo.KeepAll,
 )
 
 fun Manga.toMangaUpdate(): MangaUpdate {

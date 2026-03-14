@@ -57,6 +57,7 @@ import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetLibraryManga
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.applyFilter
@@ -551,6 +552,7 @@ class LibraryScreenModel(
                     MangaUpdate(
                         favorite = false,
                         id = it.id,
+                        customInfo = CustomMangaInfo.ClearAll,
                     )
                 }
                 updateManga.awaitAll(toDelete)

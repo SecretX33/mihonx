@@ -16,6 +16,10 @@ import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.toChapterUpdate
+import tachiyomi.domain.history.interactor.GetHistory
+import tachiyomi.domain.history.interactor.UpsertHistory
+import tachiyomi.domain.history.model.HistoryUpdate
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.source.service.SourceManager
@@ -37,6 +41,8 @@ class MigrateMangaUseCase(
     private val getTracks: GetTracks,
     private val insertTrack: InsertTrack,
     private val coverCache: CoverCache,
+    private val getHistory: GetHistory,
+    private val upsertHistory: UpsertHistory,
 ) {
     private val enhancedServices by lazy { trackerManager.trackers.filterIsInstance<EnhancedTracker>() }
 
@@ -54,7 +60,7 @@ class MigrateMangaUseCase(
                 // Worst case, chapters won't be synced
             }
 
-            // Update chapters read, bookmark and dateFetch
+            // Update chapters read, bookmark, dateFetch and history
             if (MigrationFlag.CHAPTER in flags) {
                 val prevMangaChapters = getChaptersByMangaId.await(current.id)
                 val mangaChapters = getChaptersByMangaId.await(target.id)
@@ -86,6 +92,26 @@ class MigrateMangaUseCase(
 
                 val chapterUpdates = updatedMangaChapters.map { it.toChapterUpdate() }
                 updateChapter.awaitAll(chapterUpdates)
+
+                val prevHistories = getHistory.await(current.id)
+                val prevChaptersById = prevMangaChapters.associateBy { it.id }
+
+                val historyUpdates = prevHistories.mapNotNull { history ->
+                    val readAt = history.readAt ?: return@mapNotNull null
+                    val prevChapter = prevChaptersById[history.chapterId]
+                        ?.takeIf { it.isRecognizedNumber }
+                        ?: return@mapNotNull null
+                    val newChapter = mangaChapters.firstOrNull {
+                        it.isRecognizedNumber && it.chapterNumber == prevChapter.chapterNumber
+                    } ?: return@mapNotNull null
+
+                    HistoryUpdate(
+                        chapterId = newChapter.id,
+                        readAt = readAt,
+                        sessionReadDuration = history.readDuration,
+                    )
+                }
+                upsertHistory.awaitAll(historyUpdates)
             }
 
             // Update categories
@@ -115,24 +141,44 @@ class MigrateMangaUseCase(
                 downloadManager.deleteManga(current, currentSource)
             }
 
-            // Update custom cover (recheck if custom cover exists)
-            if (MigrationFlag.CUSTOM_COVER in flags && current.hasCustomCover()) {
+            // Migrate custom series info (cover, notes, text metadata)
+            val isMigratingCustomCover = MigrationFlag.CUSTOM_INFO in flags && current.hasCustomCover()
+            if (isMigratingCustomCover) {
                 coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
             }
+            coverCache.deleteCustomCover(current.id)
+
+            val now = Instant.now().toEpochMilli()
 
             val currentMangaUpdate = MangaUpdate(
                 id = current.id,
                 favorite = false,
                 dateAdded = 0,
-            )
-                .takeIf { replace }
+                notes = "",
+                customInfo = CustomMangaInfo.ClearAll,
+                coverLastModified = now,
+            ).takeIf { replace }
+
             val targetMangaUpdate = MangaUpdate(
                 id = target.id,
                 favorite = true,
                 chapterFlags = current.chapterFlags,
                 viewerFlags = current.viewerFlags,
-                dateAdded = if (replace) current.dateAdded else Instant.now().toEpochMilli(),
+                dateAdded = if (replace) current.dateAdded else now,
+                coverLastModified = if (isMigratingCustomCover) now else target.coverLastModified,
                 notes = if (MigrationFlag.NOTES in flags) current.notes else null,
+                customInfo = if (MigrationFlag.CUSTOM_INFO in flags) {
+                    CustomMangaInfo.Set(
+                        title = current.customTitle,
+                        author = current.customAuthor,
+                        artist = current.customArtist,
+                        description = current.customDescription,
+                        genre = current.customGenre,
+                        status = current.customStatus,
+                    )
+                } else {
+                    CustomMangaInfo.KeepAll
+                },
             )
 
             updateManga.awaitAll(listOfNotNull(currentMangaUpdate, targetMangaUpdate))

@@ -10,4 +10,8 @@ class UpsertHistory(
     suspend fun await(historyUpdate: HistoryUpdate) {
         historyRepository.upsertHistory(historyUpdate)
     }
+
+    suspend fun awaitAll(historyUpdates: Collection<HistoryUpdate>) {
+        historyRepository.upsertHistoryAll(historyUpdates)
+    }
 }

@@ -10,6 +10,7 @@ import eu.kanade.presentation.browse.MigrateSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchScreenModel
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
+import mihon.feature.migration.config.MigrationConfigScreen
 import mihon.feature.migration.dialog.MigrateMangaDialog
 import mihon.feature.migration.list.MigrationListScreen
 
@@ -56,13 +57,8 @@ class MigrateSearchScreen(private val mangaId: Long) : Screen() {
                     onClickTitle = { navigator.push(MangaScreen(dialog.target.id, true)) },
                     onDismissRequest = { screenModel.clearDialog() },
                     onComplete = {
-                        if (navigator.lastItem is MangaScreen) {
-                            val lastItem = navigator.lastItem
-                            navigator.popUntil { navigator.items.contains(lastItem) }
-                            navigator.push(MangaScreen(dialog.target.id))
-                        } else {
-                            navigator.replace(MangaScreen(dialog.target.id))
-                        }
+                        navigator.popUntil { it !is MigrateSearchScreen && it !is MigrationConfigScreen }
+                        navigator.push(MangaScreen(dialog.target.id))
                     },
                 )
             }
