@@ -94,7 +94,7 @@ class MigrationConfigScreen(private val mangaIds: Collection<Long>) : Screen() {
             } else {
                 MigrateSearchScreen(mangaId)
             }
-            navigator.replace(screen)
+            navigator.push(screen)
         }
 
         if (state.isLoading) {
