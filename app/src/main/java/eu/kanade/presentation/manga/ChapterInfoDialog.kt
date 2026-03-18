@@ -26,7 +26,7 @@ fun ChapterInfoDialog(
     history: History?,
     onDismissRequest: () -> Unit,
 ) {
-    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
