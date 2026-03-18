@@ -205,18 +205,19 @@ class MangaRestorer(
         handler.await(true) {
             chapters.forEach { chapter ->
                 chaptersQueries.insert(
-                    chapter.mangaId,
-                    chapter.url,
-                    chapter.name,
-                    chapter.scanlator,
-                    chapter.read,
-                    chapter.bookmark,
-                    chapter.lastPageRead,
-                    chapter.chapterNumber,
-                    chapter.sourceOrder,
-                    chapter.dateFetch,
-                    chapter.dateUpload,
-                    chapter.version,
+                    mangaId = chapter.mangaId,
+                    url = chapter.url,
+                    name = chapter.name,
+                    scanlator = chapter.scanlator,
+                    read = chapter.read,
+                    bookmark = chapter.bookmark,
+                    lastPageRead = chapter.lastPageRead,
+                    chapterNumber = chapter.chapterNumber,
+                    sourceOrder = chapter.sourceOrder,
+                    dateFetch = chapter.dateFetch,
+                    dateUpload = chapter.dateUpload,
+                    version = chapter.version,
+                    hidden = chapter.hidden,
                 )
             }
         }
@@ -239,6 +240,7 @@ class MangaRestorer(
                     dateUpload = null,
                     chapterId = chapter.id,
                     version = chapter.version,
+                    hidden = chapter.hidden,
                     isSyncing = 0,
                 )
             }

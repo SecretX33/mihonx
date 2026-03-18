@@ -72,6 +72,8 @@ import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
+import tachiyomi.domain.history.interactor.GetHistory
+import tachiyomi.domain.history.model.History
 import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.service.calculateChapterGap
 import tachiyomi.domain.chapter.service.getChapterSort
@@ -122,6 +124,7 @@ class MangaScreenModel(
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
+    private val getHistory: GetHistory = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
@@ -834,6 +837,16 @@ class MangaScreenModel(
         toggleAllSelection(false)
     }
 
+    fun hideChapters(chapters: List<Chapter>, hidden: Boolean) {
+        screenModelScope.launchIO {
+            chapters
+                .filterNot { it.hidden == hidden }
+                .map { ChapterUpdate(id = it.id, hidden = hidden) }
+                .let { updateChapter.awaitAll(it) }
+        }
+        toggleAllSelection(false)
+    }
+
     /**
      * Deletes the given list of chapter.
      *
@@ -934,6 +947,20 @@ class MangaScreenModel(
 
         screenModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetSubChapterFilter(manga, flag)
+        }
+    }
+
+    fun setHiddenFilter(state: TriState) {
+        val manga = successState?.manga ?: return
+
+        val flag = when (state) {
+            TriState.DISABLED -> Manga.SHOW_ALL
+            TriState.ENABLED_IS -> Manga.CHAPTER_SHOW_HIDDEN
+            TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_HIDDEN
+        }
+
+        screenModelScope.launchNonCancellable {
+            setMangaChapterFlags.awaitSetHiddenFilter(manga, flag)
         }
     }
 
@@ -1104,6 +1131,7 @@ class MangaScreenModel(
             val manga: Manga,
             val initialSelection: ImmutableList<CheckboxState<Category>>,
         ) : Dialog
+        data class ChapterInfo(val chapter: Chapter, val history: History?) : Dialog
         data class DeleteChapters(val chapters: List<Chapter>) : Dialog
         data class DuplicateManga(val manga: Manga, val duplicates: List<MangaWithChapterCount>) : Dialog
         data class Migrate(val target: Manga, val current: Manga) : Dialog
@@ -1116,6 +1144,13 @@ class MangaScreenModel(
 
     fun dismissDialog() {
         updateSuccessState { it.copy(dialog = null) }
+    }
+
+    fun showChapterInfoDialog(chapter: Chapter) {
+        screenModelScope.launchIO {
+            val history = getHistory.await(mangaId).find { it.chapterId == chapter.id }
+            updateSuccessState { it.copy(dialog = Dialog.ChapterInfo(chapter, history)) }
+        }
     }
 
     fun showDeleteChapterDialog(chapters: List<Chapter>) {
@@ -1248,6 +1283,7 @@ class MangaScreenModel(
                 val downloadedFilter = manga.downloadedFilter
                 val bookmarkedFilter = manga.bookmarkedFilter
                 val subChapterFilter = manga.subChapterFilter
+                val hiddenFilter = manga.hiddenFilter
                 return asSequence()
                     .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }
                     .filter { (chapter) -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
@@ -1255,6 +1291,7 @@ class MangaScreenModel(
                     .filter { (chapter) ->
                         applyFilter(subChapterFilter) { chapter.isSubChapter }
                     }
+                    .filter { (chapter) -> applyFilter(hiddenFilter) { chapter.hidden } }
                     .sortedWith { (chapter1), (chapter2) -> getChapterSort(manga).invoke(chapter1, chapter2) }
             }
         }

@@ -87,6 +87,7 @@ class MigrateMangaUseCase(
                         }
                     }
 
+                    updatedChapter = updatedChapter.copy(hidden = false)
                     updatedChapter
                 }
 

@@ -151,6 +151,11 @@ class LibraryPreferences(
         Manga.SHOW_ALL,
     )
 
+    fun filterChapterByHidden() = preferenceStore.getLong(
+        "default_chapter_filter_by_hidden",
+        Manga.CHAPTER_SHOW_NOT_HIDDEN,
+    )
+
     // and upload date
     fun sortChapterBySourceOrNumber() = preferenceStore.getLong(
         "default_chapter_sort_by_source_or_number",
@@ -172,6 +177,7 @@ class LibraryPreferences(
         filterChapterByDownloaded().set(manga.downloadedFilterRaw)
         filterChapterByBookmarked().set(manga.bookmarkedFilterRaw)
         filterChapterBySubChapter().set(manga.subChapterFilterRaw)
+        filterChapterByHidden().set(manga.hiddenFilterRaw)
         sortChapterBySourceOrNumber().set(manga.sorting)
         displayChapterByNameOrNumber().set(manga.displayMode)
         sortChapterByAscendingOrDescending().set(

@@ -21,6 +21,7 @@ class SetMangaDefaultChapterFlags(
                     downloadedFilter = filterChapterByDownloaded().get(),
                     bookmarkedFilter = filterChapterByBookmarked().get(),
                     subChapterFilter = filterChapterBySubChapter().get(),
+                    hiddenFilter = filterChapterByHidden().get(),
                     sortingMode = sortChapterBySourceOrNumber().get(),
                     sortingDirection = sortChapterByAscendingOrDescending().get(),
                     displayMode = displayChapterByNameOrNumber().get(),
