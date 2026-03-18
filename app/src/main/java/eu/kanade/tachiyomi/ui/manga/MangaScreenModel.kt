@@ -838,11 +838,27 @@ class MangaScreenModel(
     }
 
     fun hideChapters(chapters: List<Chapter>, hidden: Boolean) {
+        val state = successState
+        val isFirstHide = hidden &&
+            state?.manga?.hiddenFilter != TriState.ENABLED_NOT &&
+            state?.chapters?.none { it.chapter.hidden } == true
+
         screenModelScope.launchIO {
             chapters
                 .filterNot { it.hidden == hidden }
                 .map { ChapterUpdate(id = it.id, hidden = hidden) }
                 .let { updateChapter.awaitAll(it) }
+
+            if (isFirstHide) {
+                val result = snackbarHostState.showSnackbar(
+                    message = context.stringResource(MR.strings.snack_hide_hidden_chapters),
+                    actionLabel = context.stringResource(MR.strings.action_hide_hidden),
+                    withDismissAction = true,
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    setHiddenFilter(TriState.ENABLED_NOT)
+                }
+            }
         }
         toggleAllSelection(false)
     }

@@ -1063,6 +1063,8 @@
     <string name="action_hide_chapter">Hide chapter</string>
     <string name="action_unhide_chapter">Unhide chapter</string>
     <string name="action_filter_hidden">Hidden</string>
+    <string name="snack_hide_hidden_chapters">Hide hidden chapters?</string>
+    <string name="action_hide_hidden">Hide</string>
 
     <!-- Chapter info dialog -->
     <string name="chapter_info">Chapter info</string>
