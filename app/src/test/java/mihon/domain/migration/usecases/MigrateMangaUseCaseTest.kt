@@ -10,11 +10,11 @@ import eu.kanade.tachiyomi.source.Source
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
 import io.mockk.slot
 import kotlinx.coroutines.runBlocking
 import mihon.domain.migration.models.MigrationFlag
