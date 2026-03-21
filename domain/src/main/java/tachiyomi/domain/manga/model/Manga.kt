@@ -71,8 +71,8 @@ data class Manga(
     val subChapterFilterRaw: Long
         get() = chapterFlags and CHAPTER_SUB_CHAPTER_MASK
 
-    val hiddenFilterRaw: Long
-        get() = chapterFlags and CHAPTER_HIDDEN_MASK
+    val excludedFilterRaw: Long
+        get() = chapterFlags and CHAPTER_EXCLUDED_MASK
 
     val unreadFilter: TriState
         get() = when (unreadFilterRaw) {
@@ -95,10 +95,10 @@ data class Manga(
             else -> TriState.DISABLED
         }
 
-    val hiddenFilter: TriState
-        get() = when (hiddenFilterRaw) {
-            CHAPTER_SHOW_HIDDEN -> TriState.ENABLED_IS
-            CHAPTER_SHOW_NOT_HIDDEN -> TriState.ENABLED_NOT
+    val excludedFilter: TriState
+        get() = when (excludedFilterRaw) {
+            CHAPTER_SHOW_EXCLUDED -> TriState.ENABLED_IS
+            CHAPTER_SHOW_NOT_EXCLUDED -> TriState.ENABLED_NOT
             else -> TriState.DISABLED
         }
 
@@ -130,9 +130,9 @@ data class Manga(
         const val CHAPTER_SHOW_NOT_SUB_CHAPTER = 0x00000800L
         const val CHAPTER_SUB_CHAPTER_MASK = 0x00000C00L
 
-        const val CHAPTER_SHOW_HIDDEN = 0x00001000L
-        const val CHAPTER_SHOW_NOT_HIDDEN = 0x00002000L
-        const val CHAPTER_HIDDEN_MASK = 0x00003000L
+        const val CHAPTER_SHOW_EXCLUDED = 0x00001000L
+        const val CHAPTER_SHOW_NOT_EXCLUDED = 0x00002000L
+        const val CHAPTER_EXCLUDED_MASK = 0x00003000L
 
         const val CHAPTER_SORTING_SOURCE = 0x00000000L
         const val CHAPTER_SORTING_NUMBER = 0x00000100L

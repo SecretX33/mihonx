@@ -44,11 +44,11 @@ class SetMangaChapterFlags(
         )
     }
 
-    suspend fun awaitSetHiddenFilter(manga: Manga, flag: Long): Boolean {
+    suspend fun awaitSetExcludedFilter(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_HIDDEN_MASK),
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_EXCLUDED_MASK),
             ),
         )
     }
@@ -93,7 +93,7 @@ class SetMangaChapterFlags(
         downloadedFilter: Long,
         bookmarkedFilter: Long,
         subChapterFilter: Long,
-        hiddenFilter: Long,
+        excludedFilter: Long,
         sortingMode: Long,
         sortingDirection: Long,
         displayMode: Long,
@@ -105,7 +105,7 @@ class SetMangaChapterFlags(
                     .setFlag(downloadedFilter, Manga.CHAPTER_DOWNLOADED_MASK)
                     .setFlag(bookmarkedFilter, Manga.CHAPTER_BOOKMARKED_MASK)
                     .setFlag(subChapterFilter, Manga.CHAPTER_SUB_CHAPTER_MASK)
-                    .setFlag(hiddenFilter, Manga.CHAPTER_HIDDEN_MASK)
+                    .setFlag(excludedFilter, Manga.CHAPTER_EXCLUDED_MASK)
                     .setFlag(sortingMode, Manga.CHAPTER_SORTING_MASK)
                     .setFlag(sortingDirection, Manga.CHAPTER_SORT_DIR_MASK)
                     .setFlag(displayMode, Manga.CHAPTER_DISPLAY_MASK),

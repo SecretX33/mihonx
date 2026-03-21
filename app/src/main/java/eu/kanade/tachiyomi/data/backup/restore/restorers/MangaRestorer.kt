@@ -217,7 +217,7 @@ class MangaRestorer(
                     dateFetch = chapter.dateFetch,
                     dateUpload = chapter.dateUpload,
                     version = chapter.version,
-                    hidden = chapter.hidden,
+                    excluded = chapter.excluded,
                 )
             }
         }
@@ -240,7 +240,7 @@ class MangaRestorer(
                     dateUpload = null,
                     chapterId = chapter.id,
                     version = chapter.version,
-                    hidden = chapter.hidden,
+                    excluded = chapter.excluded,
                     isSyncing = 0,
                 )
             }

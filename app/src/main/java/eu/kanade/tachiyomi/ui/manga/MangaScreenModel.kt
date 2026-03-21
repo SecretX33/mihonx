@@ -837,26 +837,26 @@ class MangaScreenModel(
         toggleAllSelection(false)
     }
 
-    fun hideChapters(chapters: List<Chapter>, hidden: Boolean) {
+    fun excludeChapters(chapters: List<Chapter>, excluded: Boolean) {
         val state = successState
-        val isFirstHide = hidden &&
-            state?.manga?.hiddenFilter != TriState.ENABLED_NOT &&
-            state?.chapters?.none { it.chapter.hidden } == true
+        val isFirstExclude = excluded &&
+            state?.manga?.excludedFilter != TriState.ENABLED_NOT &&
+            state?.chapters?.none { it.chapter.excluded } == true
 
         screenModelScope.launchIO {
             chapters
-                .filterNot { it.hidden == hidden }
-                .map { ChapterUpdate(id = it.id, hidden = hidden) }
+                .filterNot { it.excluded == excluded }
+                .map { ChapterUpdate(id = it.id, excluded = excluded) }
                 .let { updateChapter.awaitAll(it) }
 
-            if (isFirstHide) {
+            if (isFirstExclude) {
                 val result = snackbarHostState.showSnackbar(
-                    message = context.stringResource(MR.strings.snack_hide_hidden_chapters),
-                    actionLabel = context.stringResource(MR.strings.action_hide_hidden),
+                    message = context.stringResource(MR.strings.snack_hide_excluded_chapters),
+                    actionLabel = context.stringResource(MR.strings.action_hide_excluded),
                     withDismissAction = true,
                 )
                 if (result == SnackbarResult.ActionPerformed) {
-                    setHiddenFilter(TriState.ENABLED_NOT)
+                    setExcludedFilter(TriState.ENABLED_NOT)
                 }
             }
         }
@@ -966,17 +966,17 @@ class MangaScreenModel(
         }
     }
 
-    fun setHiddenFilter(state: TriState) {
+    fun setExcludedFilter(state: TriState) {
         val manga = successState?.manga ?: return
 
         val flag = when (state) {
             TriState.DISABLED -> Manga.SHOW_ALL
-            TriState.ENABLED_IS -> Manga.CHAPTER_SHOW_HIDDEN
-            TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_HIDDEN
+            TriState.ENABLED_IS -> Manga.CHAPTER_SHOW_EXCLUDED
+            TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_EXCLUDED
         }
 
         screenModelScope.launchNonCancellable {
-            setMangaChapterFlags.awaitSetHiddenFilter(manga, flag)
+            setMangaChapterFlags.awaitSetExcludedFilter(manga, flag)
         }
     }
 
@@ -1299,7 +1299,7 @@ class MangaScreenModel(
                 val downloadedFilter = manga.downloadedFilter
                 val bookmarkedFilter = manga.bookmarkedFilter
                 val subChapterFilter = manga.subChapterFilter
-                val hiddenFilter = manga.hiddenFilter
+                val excludedFilter = manga.excludedFilter
                 return asSequence()
                     .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }
                     .filter { (chapter) -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
@@ -1307,7 +1307,7 @@ class MangaScreenModel(
                     .filter { (chapter) ->
                         applyFilter(subChapterFilter) { chapter.isSubChapter }
                     }
-                    .filter { (chapter) -> applyFilter(hiddenFilter) { chapter.hidden } }
+                    .filter { (chapter) -> applyFilter(excludedFilter) { chapter.excluded } }
                     .sortedWith { (chapter1), (chapter2) -> getChapterSort(manga).invoke(chapter1, chapter2) }
             }
         }

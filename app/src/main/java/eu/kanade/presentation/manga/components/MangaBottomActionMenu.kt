@@ -181,7 +181,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onHideClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_hide_chapter),
+                        title = stringResource(MR.strings.action_exclude_chapter),
                         icon = Icons.Outlined.VisibilityOff,
                         toConfirm = confirm[7],
                         onLongClick = { onLongClickItem(7) },
@@ -190,7 +190,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onUnhideClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_unhide_chapter),
+                        title = stringResource(MR.strings.action_include_chapter),
                         icon = Icons.Outlined.Visibility,
                         toConfirm = confirm[8],
                         onLongClick = { onLongClickItem(8) },

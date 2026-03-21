@@ -753,10 +753,10 @@ private fun SharedMangaBottomActionMenu(
         },
         onHideClicked = {
             onMultiHideClicked(selected.fastMap { it.chapter }, true)
-        }.takeIf { selected.fastAny { !it.chapter.hidden } },
+        }.takeIf { selected.fastAny { !it.chapter.excluded } },
         onUnhideClicked = {
             onMultiHideClicked(selected.fastMap { it.chapter }, false)
-        }.takeIf { selected.fastAll { it.chapter.hidden } },
+        }.takeIf { selected.fastAll { it.chapter.excluded } },
         onInfoClicked = {
             onShowChapterInfo(selected[0].chapter)
         }.takeIf { selected.size == 1 },
@@ -812,7 +812,7 @@ private fun LazyListScope.sharedChapterItems(
                     scanlator = item.chapter.scanlator.takeIf { !it.isNullOrBlank() },
                     read = item.chapter.read,
                     bookmark = item.chapter.bookmark,
-                    hidden = item.chapter.hidden,
+                    excluded = item.chapter.excluded,
                     selected = item.selected,
                     downloadIndicatorEnabled = !isAnyChapterSelected && !manga.isLocal(),
                     downloadStateProvider = { item.downloadState },

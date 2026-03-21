@@ -55,7 +55,7 @@ fun MangaChapterListItem(
     scanlator: String?,
     read: Boolean,
     bookmark: Boolean,
-    hidden: Boolean,
+    excluded: Boolean,
     selected: Boolean,
     downloadIndicatorEnabled: Boolean,
     downloadStateProvider: () -> Download.State,
@@ -94,7 +94,7 @@ fun MangaChapterListItem(
     ) {
         Row(
             modifier = modifier
-                .alpha(if (hidden) DISABLED_ALPHA else 1f)
+                .alpha(if (excluded) DISABLED_ALPHA else 1f)
                 .selectedBackground(selected)
                 .combinedClickable(
                     onClick = onClick,
@@ -138,10 +138,10 @@ fun MangaChapterListItem(
                         onTextLayout = { textHeight = it.size.height },
                         color = LocalContentColor.current.copy(alpha = if (read) DISABLED_ALPHA else 1f),
                     )
-                    if (hidden) {
+                    if (excluded) {
                         Icon(
                             imageVector = Icons.Outlined.VisibilityOff,
-                            contentDescription = stringResource(MR.strings.action_filter_hidden),
+                            contentDescription = stringResource(MR.strings.action_filter_excluded),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp })
                                 .padding(start = 4.dp),
