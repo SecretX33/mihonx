@@ -15,9 +15,11 @@ import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.toChapterUpdate
 import tachiyomi.domain.history.interactor.GetHistory
 import tachiyomi.domain.history.interactor.UpsertHistory
+import tachiyomi.domain.history.model.History
 import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
@@ -94,24 +96,11 @@ class MigrateMangaUseCase(
                 val chapterUpdates = updatedMangaChapters.map { it.toChapterUpdate() }
                 updateChapter.awaitAll(chapterUpdates)
 
-                val prevHistories = getHistory.await(current.id)
-                val prevChaptersById = prevMangaChapters.associateBy { it.id }
-
-                val historyUpdates = prevHistories.mapNotNull { history ->
-                    val readAt = history.readAt ?: return@mapNotNull null
-                    val prevChapter = prevChaptersById[history.chapterId]
-                        ?.takeIf { it.isRecognizedNumber }
-                        ?: return@mapNotNull null
-                    val newChapter = mangaChapters.firstOrNull {
-                        it.isRecognizedNumber && it.chapterNumber == prevChapter.chapterNumber
-                    } ?: return@mapNotNull null
-
-                    HistoryUpdate(
-                        chapterId = newChapter.id,
-                        readAt = readAt,
-                        sessionReadDuration = history.readDuration,
-                    )
-                }
+                val historyUpdates = buildHistoryUpdates(
+                    current = current,
+                    oldMangaChapters = prevMangaChapters,
+                    newMangaChapters = mangaChapters,
+                )
                 upsertHistory.awaitAll(historyUpdates)
             }
 
@@ -188,5 +177,37 @@ class MigrateMangaUseCase(
                 throw e
             }
         }
+    }
+
+    private suspend fun buildHistoryUpdates(
+        current: Manga,
+        oldMangaChapters: Collection<Chapter>,
+        newMangaChapters: Collection<Chapter>,
+    ): List<HistoryUpdate> {
+        val prevHistories = getHistory.await(current.id).filter { it.readAt != null }
+        val prevChaptersById = oldMangaChapters.filter { it.isRecognizedNumber }.associateBy { it.id }
+        val newChaptersByNumber = newMangaChapters.filter { it.isRecognizedNumber }.groupBy { it.chapterNumber }
+
+        val historyWithChapters = prevHistories.mapNotNull { history ->
+            prevChaptersById[history.chapterId]?.let { history to it }
+        }.sortedWith(
+            compareByDescending<Pair<History, Chapter>> { it.first.readAt!! }
+                .thenBy { it.second.chapterNumber },
+        ).distinctBy { (_, chapter) -> chapter.chapterNumber }
+
+        val historyUpdates = historyWithChapters.flatMap { (history, prevChapter) ->
+            val newChapters = newChaptersByNumber[prevChapter.chapterNumber]
+                ?: return@flatMap emptyList()
+            val readAt = history.readAt!!
+
+            newChapters.map {
+                HistoryUpdate(
+                    chapterId = it.id,
+                    readAt = readAt,
+                    sessionReadDuration = history.readDuration,
+                )
+            }
+        }
+        return historyUpdates
     }
 }
