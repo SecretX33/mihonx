@@ -978,7 +978,7 @@ class MangaScreenModel(
         val manga = successState?.manga ?: return
 
         val flag = when (state) {
-            TriState.DISABLED -> Manga.SHOW_ALL
+            TriState.DISABLED -> Manga.CHAPTER_SHOW_ALL_EXCLUDED
             TriState.ENABLED_IS -> Manga.CHAPTER_SHOW_EXCLUDED
             TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_EXCLUDED
         }

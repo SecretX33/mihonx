@@ -98,8 +98,8 @@ data class Manga(
     val excludedFilter: TriState
         get() = when (excludedFilterRaw) {
             CHAPTER_SHOW_EXCLUDED -> TriState.ENABLED_IS
-            CHAPTER_SHOW_NOT_EXCLUDED -> TriState.ENABLED_NOT
-            else -> TriState.DISABLED
+            CHAPTER_SHOW_ALL_EXCLUDED -> TriState.DISABLED
+            else -> TriState.ENABLED_NOT
         }
 
     fun sortDescending(): Boolean {
@@ -130,8 +130,9 @@ data class Manga(
         const val CHAPTER_SHOW_NOT_SUB_CHAPTER = 0x00000800L
         const val CHAPTER_SUB_CHAPTER_MASK = 0x00000C00L
 
+        const val CHAPTER_SHOW_NOT_EXCLUDED = 0x00000000L
         const val CHAPTER_SHOW_EXCLUDED = 0x00001000L
-        const val CHAPTER_SHOW_NOT_EXCLUDED = 0x00002000L
+        const val CHAPTER_SHOW_ALL_EXCLUDED = 0x00002000L
         const val CHAPTER_EXCLUDED_MASK = 0x00003000L
 
         const val CHAPTER_SORTING_SOURCE = 0x00000000L
