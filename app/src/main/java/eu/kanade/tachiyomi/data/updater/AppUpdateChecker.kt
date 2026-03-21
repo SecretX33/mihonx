@@ -40,7 +40,7 @@ class AppUpdateChecker {
     }
 }
 
-const val GITHUB_REPO = "SecretX33/mihon"
+const val GITHUB_REPO = "SecretX33/mihonx"
 
 const val RELEASE_TAG = "v${BuildConfig.VERSION_NAME}"
 

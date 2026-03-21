@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   prepare:
-    if: github.event_name == 'workflow_dispatch' && (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihon')
+    if: github.event_name == 'workflow_dispatch' && (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihonx')
     name: Prepare tag
     runs-on: 'ubuntu-24.04'
     outputs:
@@ -104,7 +104,7 @@ jobs:
     # Allow this job to run even when 'prepare' is skipped (tag push event)
     if: |
       always() &&
-      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihon') &&
+      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihonx') &&
       (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
     outputs:
       tag: ${{ steps.extract.outputs.tag }}
@@ -125,7 +125,7 @@ jobs:
     needs: get_tag
     if: |
       always() &&
-      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihon') &&
+      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihonx') &&
       needs.get_tag.result == 'success'
 
     steps:
@@ -190,7 +190,7 @@ jobs:
     needs: get_tag
     if: |
       always() &&
-      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihon') &&
+      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihonx') &&
       needs.get_tag.result == 'success'
 
     steps:
@@ -249,7 +249,7 @@ jobs:
     needs: [get_tag, build, build_foss]
     if: |
       always() &&
-      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihon') &&
+      (github.repository == 'mihonapp/mihon' || github.repository == 'SecretX33/mihonx') &&
       needs.get_tag.result == 'success' &&
       needs.build.result == 'success' &&
       needs.build_foss.result == 'success'
