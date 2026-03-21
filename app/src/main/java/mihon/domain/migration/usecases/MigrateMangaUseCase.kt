@@ -28,7 +28,6 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
 import java.time.Instant
-import java.util.Date
 
 class MigrateMangaUseCase(
     private val sourcePreferences: SourcePreferences,
@@ -99,8 +98,8 @@ class MigrateMangaUseCase(
 
                 val historyUpdates = buildHistoryUpdates(
                     current = current,
-                    prevMangaChapters = prevMangaChapters,
-                    mangaChapters = mangaChapters,
+                    oldMangaChapters = prevMangaChapters,
+                    newMangaChapters = mangaChapters,
                 )
                 upsertHistory.awaitAll(historyUpdates)
             }
@@ -182,27 +181,24 @@ class MigrateMangaUseCase(
 
     private suspend fun buildHistoryUpdates(
         current: Manga,
-        prevMangaChapters: Collection<Chapter>,
-        mangaChapters: Collection<Chapter>,
+        oldMangaChapters: Collection<Chapter>,
+        newMangaChapters: Collection<Chapter>,
     ): List<HistoryUpdate> {
         val prevHistories = getHistory.await(current.id).filter { it.readAt != null }
-        val prevChaptersById = prevMangaChapters.filter { it.isRecognizedNumber }.associateBy { it.id }
+        val prevChaptersById = oldMangaChapters.filter { it.isRecognizedNumber }.associateBy { it.id }
+        val newChaptersByNumber = newMangaChapters.filter { it.isRecognizedNumber }.groupBy { it.chapterNumber }
 
         val historyWithChapters = prevHistories.mapNotNull { history ->
             prevChaptersById[history.chapterId]?.let { history to it }
         }.sortedWith(
-            compareByDescending<Pair<History, Chapter>> { it.first.readAt ?: Date.from(Instant.EPOCH) }
+            compareByDescending<Pair<History, Chapter>> { it.first.readAt!! }
                 .thenBy { it.second.chapterNumber },
-        )
-            .distinctBy { (_, chapter) -> chapter.chapterNumber }
+        ).distinctBy { (_, chapter) -> chapter.chapterNumber }
 
         val historyUpdates = historyWithChapters.flatMap { (history, prevChapter) ->
+            val newChapters = newChaptersByNumber[prevChapter.chapterNumber]
+                ?: return@flatMap emptyList()
             val readAt = history.readAt!!
-            val newChapters = mangaChapters.filter {
-                it.isRecognizedNumber && it.chapterNumber == prevChapter.chapterNumber
-            }.ifEmpty {
-                return@flatMap emptyList()
-            }
 
             newChapters.map {
                 HistoryUpdate(
