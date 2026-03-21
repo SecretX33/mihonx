@@ -43,6 +43,27 @@ fun ChapterInfoDialog(
                         },
                     )
                 }
+                InfoRow(
+                    label = stringResource(MR.strings.chapter_info_last_read),
+                    value = history?.readAt?.let { dateFormat.format(it) } ?: "-",
+                )
+                InfoRow(
+                    label = stringResource(MR.strings.chapter_info_read_duration),
+                    value = history?.readDuration
+                        ?.takeIf { it >= 0 }
+                        ?.let { durationMs ->
+                            val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs)
+                            val seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs) % 60
+                            "%d:%02d".format(minutes, seconds)
+                        }
+                        ?: "-",
+                )
+                if (!chapter.read && chapter.lastPageRead > 0) {
+                    InfoRow(
+                        label = stringResource(MR.strings.chapter_info_reading_progress),
+                        value = stringResource(MR.strings.chapter_progress, chapter.lastPageRead + 1),
+                    )
+                }
                 if (!chapter.scanlator.isNullOrBlank()) {
                     InfoRow(
                         label = stringResource(MR.strings.scanlator),
@@ -65,27 +86,6 @@ fun ChapterInfoDialog(
                         "-"
                     },
                 )
-                InfoRow(
-                    label = stringResource(MR.strings.chapter_info_last_read),
-                    value = history?.readAt?.let { dateFormat.format(it) } ?: "-",
-                )
-                InfoRow(
-                    label = stringResource(MR.strings.chapter_info_read_duration),
-                    value = history?.readDuration
-                        ?.takeIf { it >= 0 }
-                        ?.let { durationMs ->
-                            val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs)
-                            val seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs) % 60
-                            "%d:%02d".format(minutes, seconds)
-                        }
-                        ?: "-",
-                )
-                if (!chapter.read && chapter.lastPageRead > 0) {
-                    InfoRow(
-                        label = stringResource(MR.strings.chapter_info_reading_progress),
-                        value = stringResource(MR.strings.chapter_progress, chapter.lastPageRead + 1),
-                    )
-                }
             }
         },
         confirmButton = {

@@ -72,11 +72,11 @@ import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
-import tachiyomi.domain.history.interactor.GetHistory
-import tachiyomi.domain.history.model.History
 import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.service.calculateChapterGap
 import tachiyomi.domain.chapter.service.getChapterSort
+import tachiyomi.domain.history.interactor.GetHistory
+import tachiyomi.domain.history.model.History
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.manga.interactor.GetMangaWithChapters
@@ -838,25 +838,33 @@ class MangaScreenModel(
     }
 
     fun excludeChapters(chapters: List<Chapter>, excluded: Boolean) {
-        val state = successState
-        val isFirstExclude = excluded &&
-            state?.manga?.excludedFilter != TriState.ENABLED_NOT &&
-            state?.chapters?.none { it.chapter.excluded } == true
+        val filterIsActive = successState?.manga?.excludedFilter == TriState.ENABLED_NOT
 
         screenModelScope.launchIO {
-            chapters
+            val updates = chapters
                 .filterNot { it.excluded == excluded }
                 .map { ChapterUpdate(id = it.id, excluded = excluded) }
-                .let { updateChapter.awaitAll(it) }
+            updateChapter.awaitAll(updates)
 
-            if (isFirstExclude) {
+            if (excluded && filterIsActive && updates.isNotEmpty()) {
                 val result = snackbarHostState.showSnackbar(
-                    message = context.stringResource(MR.strings.snack_hide_excluded_chapters),
-                    actionLabel = context.stringResource(MR.strings.action_hide_excluded),
+                    message = context.stringResource(
+                        MR.strings.snack_chapter_excluded,
+                        updates.size,
+                        if (updates.size !=
+                            1
+                        ) {
+                            "s"
+                        } else {
+                            ""
+                        },
+                    ),
+                    actionLabel = context.stringResource(MR.strings.action_undo),
+                    duration = SnackbarDuration.Short,
                     withDismissAction = true,
                 )
                 if (result == SnackbarResult.ActionPerformed) {
-                    setExcludedFilter(TriState.ENABLED_NOT)
+                    updateChapter.awaitAll(updates.map { it.copy(excluded = false) })
                 }
             }
         }

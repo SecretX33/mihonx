@@ -34,7 +34,7 @@ fun Manga.chaptersFiltered(): Boolean = unreadFilter != TriState.DISABLED ||
     downloadedFilter != TriState.DISABLED ||
     bookmarkedFilter != TriState.DISABLED ||
     subChapterFilter != TriState.DISABLED ||
-    excludedFilter != TriState.DISABLED
+    excludedFilter != TriState.ENABLED_NOT
 
 fun Manga.toSManga(): SManga = SManga.create().also {
     it.url = url

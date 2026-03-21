@@ -1062,9 +1062,8 @@
     <!-- Chapter exclude/include -->
     <string name="action_exclude_chapter">Exclude chapter</string>
     <string name="action_include_chapter">Include chapter</string>
-    <string name="action_filter_excluded">Excluded</string>
-    <string name="snack_hide_excluded_chapters">Hide excluded chapters?</string>
-    <string name="action_hide_excluded">Hide</string>
+    <string name="action_filter_excluded">Hidden</string>
+    <string name="snack_chapter_excluded">%1$d chapter%2$s hidden</string>
 
     <!-- Chapter info dialog -->
     <string name="chapter_info">Chapter info</string>
