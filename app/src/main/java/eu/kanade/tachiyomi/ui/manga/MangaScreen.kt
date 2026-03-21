@@ -28,6 +28,7 @@ import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
+import eu.kanade.presentation.manga.ChapterInfoDialog
 import eu.kanade.presentation.manga.ChapterSettingsDialog
 import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.EditCoverAction
@@ -168,6 +169,8 @@ class MangaScreen(
             onMultiMarkAsReadClicked = screenModel::markChaptersRead,
             onMarkPreviousAsReadClicked = screenModel::markPreviousChapterRead,
             onMultiDeleteClicked = screenModel::showDeleteChapterDialog,
+            onMultiHideClicked = screenModel::excludeChapters,
+            onShowChapterInfo = screenModel::showChapterInfoDialog,
             onChapterSwipe = screenModel::chapterSwipe,
             onChapterSelected = screenModel::toggleSelection,
             onAllChapterSelected = screenModel::toggleAllSelection,
@@ -187,6 +190,13 @@ class MangaScreen(
                     onConfirm = { include, _ ->
                         screenModel.moveMangaToCategoriesAndAddToLibrary(dialog.manga, include)
                     },
+                )
+            }
+            is MangaScreenModel.Dialog.ChapterInfo -> {
+                ChapterInfoDialog(
+                    chapter = dialog.chapter,
+                    history = dialog.history,
+                    onDismissRequest = onDismissRequest,
                 )
             }
             is MangaScreenModel.Dialog.DeleteChapters -> {
@@ -225,6 +235,7 @@ class MangaScreen(
                 onUnreadFilterChanged = screenModel::setUnreadFilter,
                 onBookmarkedFilterChanged = screenModel::setBookmarkedFilter,
                 onSubChapterFilterChanged = screenModel::setSubChapterFilter,
+                onExcludedFilterChanged = screenModel::setExcludedFilter,
                 onSortModeChanged = screenModel::setSorting,
                 onDisplayModeChanged = screenModel::setDisplayMode,
                 onSetAsDefault = screenModel::setCurrentSettingsAsDefault,

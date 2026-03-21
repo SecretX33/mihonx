@@ -1058,4 +1058,19 @@
     <string name="migrationListScreen.progressDialog.cancelLabel">Cancel</string>
     <string name="migrationListScreen.matchWithoutChapterToast">No chapters found, this entry cannot be used for migration</string>
     <string name="long_press_to_fill_default">Long pressed to fill in the default value</string>
+
+    <!-- Chapter exclude/include -->
+    <string name="action_exclude_chapter">Exclude chapter</string>
+    <string name="action_include_chapter">Include chapter</string>
+    <string name="action_filter_excluded">Hidden</string>
+    <string name="snack_chapter_excluded">%1$d chapter%2$s hidden</string>
+
+    <!-- Chapter info dialog -->
+    <string name="chapter_info">Chapter info</string>
+    <string name="chapter_info_number">Chapter number</string>
+    <string name="chapter_info_date_uploaded">Date uploaded</string>
+    <string name="chapter_info_date_fetched">Date fetched</string>
+    <string name="chapter_info_last_read">Last read</string>
+    <string name="chapter_info_read_duration">Read duration</string>
+    <string name="chapter_info_reading_progress">Reading progress</string>
 </resources>

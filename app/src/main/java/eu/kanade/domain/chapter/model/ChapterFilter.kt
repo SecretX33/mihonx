@@ -19,6 +19,7 @@ fun List<Chapter>.applyFilters(manga: Manga, downloadManager: DownloadManager): 
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
     val subChapterFilter = manga.subChapterFilter
+    val excludedFilter = manga.excludedFilter
 
     return asSequence()
         .filter { chapter -> applyFilter(unreadFilter) { !chapter.read } }
@@ -36,6 +37,7 @@ fun List<Chapter>.applyFilters(manga: Manga, downloadManager: DownloadManager): 
             }
         }
         .filter { chapter -> applyFilter(subChapterFilter) { chapter.isSubChapter } }
+        .filter { chapter -> applyFilter(excludedFilter) { chapter.excluded } }
         .sortedWith(getChapterSort(manga)).toList()
 }
 
@@ -49,10 +51,12 @@ fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
     val subChapterFilter = manga.subChapterFilter
+    val excludedFilter = manga.excludedFilter
     return asSequence()
         .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }
         .filter { (chapter) -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
         .filter { applyFilter(downloadedFilter) { it.isDownloaded || isLocalManga } }
         .filter { (chapter) -> applyFilter(subChapterFilter) { chapter.isSubChapter } }
+        .filter { (chapter) -> applyFilter(excludedFilter) { chapter.excluded } }
         .sortedWith { (chapter1), (chapter2) -> getChapterSort(manga).invoke(chapter1, chapter2) }
 }

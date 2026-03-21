@@ -52,6 +52,7 @@ fun ChapterSettingsDialog(
     onUnreadFilterChanged: (TriState) -> Unit,
     onBookmarkedFilterChanged: (TriState) -> Unit,
     onSubChapterFilterChanged: (TriState) -> Unit,
+    onExcludedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: (() -> Unit),
     onSortModeChanged: (Long) -> Unit,
@@ -110,6 +111,8 @@ fun ChapterSettingsDialog(
                         onBookmarkedFilterChanged = onBookmarkedFilterChanged,
                         subChapterFilter = manga?.subChapterFilter ?: TriState.DISABLED,
                         onSubChapterFilterChanged = onSubChapterFilterChanged,
+                        excludedFilter = manga?.excludedFilter ?: TriState.DISABLED,
+                        onExcludedFilterChanged = onExcludedFilterChanged,
                         scanlatorFilterActive = scanlatorFilterActive,
                         onScanlatorFilterClicked = onScanlatorFilterClicked,
                     )
@@ -142,6 +145,8 @@ private fun ColumnScope.FilterPage(
     onBookmarkedFilterChanged: (TriState) -> Unit,
     subChapterFilter: TriState,
     onSubChapterFilterChanged: (TriState) -> Unit,
+    excludedFilter: TriState,
+    onExcludedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: (() -> Unit),
 ) {
@@ -164,6 +169,11 @@ private fun ColumnScope.FilterPage(
         label = stringResource(MR.strings.action_filter_sub_chapter),
         state = subChapterFilter,
         onClick = onSubChapterFilterChanged,
+    )
+    TriStateItem(
+        label = stringResource(MR.strings.action_filter_excluded),
+        state = excludedFilter,
+        onClick = onExcludedFilterChanged,
     )
     ScanlatorFilterItem(
         active = scanlatorFilterActive,

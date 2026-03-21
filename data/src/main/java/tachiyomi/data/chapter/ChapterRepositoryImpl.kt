@@ -30,6 +30,7 @@ class ChapterRepositoryImpl(
                         chapter.dateFetch,
                         chapter.dateUpload,
                         chapter.version,
+                        chapter.excluded,
                     )
                     val lastInsertId = chaptersQueries.selectLastInsertedRowId().executeAsOne()
                     chapter.copy(id = lastInsertId)
@@ -67,6 +68,7 @@ class ChapterRepositoryImpl(
                     chapterId = chapterUpdate.id,
                     version = chapterUpdate.version,
                     isSyncing = 0,
+                    excluded = chapterUpdate.excluded,
                 )
             }
         }
@@ -144,6 +146,7 @@ class ChapterRepositoryImpl(
         version: Long,
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
+        excluded: Boolean,
     ): Chapter = Chapter(
         id = id,
         mangaId = mangaId,
@@ -159,5 +162,6 @@ class ChapterRepositoryImpl(
         scanlator = scanlator,
         lastModifiedAt = lastModifiedAt,
         version = version,
+        excluded = excluded,
     )
 }

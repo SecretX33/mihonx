@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FileDownloadOff
 import androidx.compose.material.icons.outlined.RemoveDone
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,6 +55,7 @@ fun MangaChapterListItem(
     scanlator: String?,
     read: Boolean,
     bookmark: Boolean,
+    excluded: Boolean,
     selected: Boolean,
     downloadIndicatorEnabled: Boolean,
     downloadStateProvider: () -> Download.State,
@@ -91,6 +94,7 @@ fun MangaChapterListItem(
     ) {
         Row(
             modifier = modifier
+                .alpha(if (excluded) DISABLED_ALPHA else 1f)
                 .selectedBackground(selected)
                 .combinedClickable(
                     onClick = onClick,
@@ -134,6 +138,16 @@ fun MangaChapterListItem(
                         onTextLayout = { textHeight = it.size.height },
                         color = LocalContentColor.current.copy(alpha = if (read) DISABLED_ALPHA else 1f),
                     )
+                    if (excluded) {
+                        Icon(
+                            imageVector = Icons.Outlined.VisibilityOff,
+                            contentDescription = stringResource(MR.strings.action_filter_excluded),
+                            modifier = Modifier
+                                .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp })
+                                .padding(start = 4.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 Row {

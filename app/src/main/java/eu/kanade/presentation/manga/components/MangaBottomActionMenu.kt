@@ -29,9 +29,12 @@ import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.RemoveDone
 import androidx.compose.material.icons.outlined.SwapCalls
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -77,6 +80,9 @@ fun MangaBottomActionMenu(
     onMarkPreviousAsReadClicked: (() -> Unit)? = null,
     onDownloadClicked: (() -> Unit)? = null,
     onDeleteClicked: (() -> Unit)? = null,
+    onHideClicked: (() -> Unit)? = null,
+    onUnhideClicked: (() -> Unit)? = null,
+    onInfoClicked: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -90,7 +96,7 @@ fun MangaBottomActionMenu(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
-            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false) }
+            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false, false, false) }
             var resetJob by remember { mutableStateOf<Job?>(null) }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -171,6 +177,33 @@ fun MangaBottomActionMenu(
                         toConfirm = confirm[6],
                         onLongClick = { onLongClickItem(6) },
                         onClick = onDeleteClicked,
+                    )
+                }
+                if (onHideClicked != null) {
+                    Button(
+                        title = stringResource(MR.strings.action_exclude_chapter),
+                        icon = Icons.Outlined.VisibilityOff,
+                        toConfirm = confirm[7],
+                        onLongClick = { onLongClickItem(7) },
+                        onClick = onHideClicked,
+                    )
+                }
+                if (onUnhideClicked != null) {
+                    Button(
+                        title = stringResource(MR.strings.action_include_chapter),
+                        icon = Icons.Outlined.Visibility,
+                        toConfirm = confirm[8],
+                        onLongClick = { onLongClickItem(8) },
+                        onClick = onUnhideClicked,
+                    )
+                }
+                if (onInfoClicked != null) {
+                    Button(
+                        title = stringResource(MR.strings.chapter_info),
+                        icon = Icons.Outlined.Info,
+                        toConfirm = false,
+                        onLongClick = {},
+                        onClick = onInfoClicked,
                     )
                 }
             }
