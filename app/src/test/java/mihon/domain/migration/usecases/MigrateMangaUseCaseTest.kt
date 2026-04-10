@@ -81,7 +81,7 @@ class MigrateMangaUseCaseTest {
     fun setUp() {
         val migrationFlagsPreference = mockk<Preference<Set<MigrationFlag>>>()
         every { migrationFlagsPreference.get() } returns setOf(MigrationFlag.CHAPTER)
-        every { sourcePreferences.migrationFlags() } returns migrationFlagsPreference
+        every { sourcePreferences.migrationFlags } returns migrationFlagsPreference
 
         every { sourceManager.get(target.source) } returns mockk<Source>(relaxed = true)
         every { sourceManager.get(current.source) } returns null

@@ -63,11 +63,11 @@ class SearchScreenModelTest {
         }
 
         val sourcePreferences = mockk<SourcePreferences> {
-            every { pinnedSources() } returns mockPreference(pinnedSources)
-            every { enabledLanguages() } returns mockPreference(setOf("en"))
-            every { disabledSources() } returns mockPreference(emptySet())
-            every { globalSearchPinnedOnly() } returns pinnedOnlyPref
-            every { globalSearchFilterState() } returns filterStatePref
+            every { this@mockk.pinnedSources } returns mockPreference(pinnedSources)
+            every { this@mockk.enabledLanguages } returns mockPreference(setOf("en"))
+            every { this@mockk.disabledSources } returns mockPreference(emptySet())
+            every { this@mockk.globalSearchPinnedOnly } returns pinnedOnlyPref
+            every { this@mockk.globalSearchFilterState } returns filterStatePref
         }
 
         val model = TestSearchScreenModel(

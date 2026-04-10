@@ -47,9 +47,9 @@ abstract class SearchScreenModel(
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
 
-    private val enabledLanguages = sourcePreferences.enabledLanguages().get()
-    private val disabledSources = sourcePreferences.disabledSources().get()
-    protected val pinnedSources = sourcePreferences.pinnedSources().get()
+    private val enabledLanguages = sourcePreferences.enabledLanguages.get()
+    private val disabledSources = sourcePreferences.disabledSources.get()
+    protected val pinnedSources = sourcePreferences.pinnedSources.get()
 
     private var lastQuery: String? = null
     private var lastPinnedOnly: Boolean? = null
@@ -67,12 +67,12 @@ abstract class SearchScreenModel(
     init {
         mutableState.update { it.copy(hasPinnedSources = pinnedSources.isNotEmpty()) }
         screenModelScope.launch {
-            preferences.globalSearchFilterState().changes().collectLatest { state ->
+            preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
         }
         screenModelScope.launch {
-            preferences.globalSearchPinnedOnly().changes().collectLatest { pinned ->
+            preferences.globalSearchPinnedOnly.changes().collectLatest { pinned ->
                 mutableState.update { it.copy(pinnedOnly = pinned && it.hasPinnedSources) }
                 search()
             }
@@ -121,11 +121,11 @@ abstract class SearchScreenModel(
     }
 
     fun togglePinnedOnly() {
-        preferences.globalSearchPinnedOnly().toggle()
+        preferences.globalSearchPinnedOnly.toggle()
     }
 
     fun toggleFilterResults() {
-        preferences.globalSearchFilterState().toggle()
+        preferences.globalSearchFilterState.toggle()
     }
 
     fun search() {
