@@ -11,6 +11,33 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Added
+- Add dedicated "Support Us" screen ([@AntsyLich](https://github.com/AntsyLich)) ([#3200](https://github.com/mihonapp/mihon/pull/3200))
+- Add a one time popup asking for donation from long time users ([@AntsyLich](https://github.com/AntsyLich)) ([#3203](https://github.com/mihonapp/mihon/pull/3203))
+
+### Changed
+- Don't prompt users to enable Google Play services if disabled or unavailable ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3152](https://github.com/mihonapp/mihon/pull/3152))
+- Make "Support Us" more prominent in More screen ([@AntsyLich](https://github.com/AntsyLich)) ([#3196](https://github.com/mihonapp/mihon/pull/3196))
+
+### Improved
+- Show informative error when trying to add unapproved titles to list on MAL ([@MajorTanya](https://github.com/MajorTanya)) ([#3155](https://github.com/mihonapp/mihon/pull/3155))
+- Show AniList publishing type based on country of origin ([@zweimach](https://github.com/zweimach)) ([#3100](https://github.com/mihonapp/mihon/pull/3100))
+
+### Fixed
+- Fix app trying to split long strip when not needed ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3121](https://github.com/mihonapp/mihon/pull/3121))
+
+### Removed
+- Remove the empty "Updated to X.Y.Z" popup after app update ([@AntsyLich](https://github.com/AntsyLich)) ([#3203](https://github.com/mihonapp/mihon/pull/3203))
+
+## [v0.19.7] - 2026-03-23
+Same as v0.19.6
+
+## [v0.19.6] - 2026-03-23
+### Fixed
+- Fix app crashing when trying to add extension repo with existing signature ([@AntsyLich](https://github.com/AntsyLich)) ([`cb0e329`](https://github.com/mihonapp/mihon/commit/cb0e329))
+- Potentially fix 'database is locked' crash ([@AntsyLich](https://github.com/AntsyLich)) ([`f8e82b9`](https://github.com/mihonapp/mihon/commit/f8e82b9))
+- Fix occasional crash when mass installing/uninstalling extension using `PackageManager` ([@AntsyLich](https://github.com/AntsyLich)) ([`42daa3f`](https://github.com/mihonapp/mihon/commit/42daa3f))
+- Fix app crash on startup on some Android TV ([@AntsyLich](https://github.com/AntsyLich)) ([`b40f1d3`](https://github.com/mihonapp/mihon/commit/b40f1d3))
 
 ## [v0.19.5] - 2026-03-20
 ### Changed
@@ -495,8 +522,10 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Branding to Mihon ([@AntsyLich](https://github.com/AntsyLich))
 - Minimum supported Android version to 8 ([@AntsyLich](https://github.com/AntsyLich)) ([`dfb3091`](https://github.com/mihonapp/mihon/commit/dfb3091e380dda3e9bfb64bf5c9a685cf3a03d0e))
 
-[unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.5...main
-[v0.19.4]: https://github.com/mihonapp/mihon/compare/v0.19.4...v0.19.5
+[unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.7...main
+[v0.19.7]: https://github.com/mihonapp/mihon/compare/v0.19.6...v0.19.7
+[v0.19.6]: https://github.com/mihonapp/mihon/compare/v0.19.5...v0.19.6
+[v0.19.5]: https://github.com/mihonapp/mihon/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/mihonapp/mihon/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/mihonapp/mihon/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/mihonapp/mihon/compare/v0.19.1...v0.19.2
