@@ -26,7 +26,7 @@ android {
     defaultConfig {
         applicationId = "app.mihonx"
 
-        versionCode = 20
+        versionCode = 22
         versionName = "0.0.1"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
