@@ -22,10 +22,13 @@ dependencies {
     implementation(libs.bundles.kotlinx.coroutines)
     implementation(libs.bundles.serialization)
 
+    implementation(libs.kotlinx.datetime)
+
     implementation(libs.unifile)
 
     api(libs.sqldelight.androidxPaging)
 
+    compileOnly(platform(libs.androidx.compose.bom))
     compileOnly(libs.androidx.compose.runtimeAnnotation)
 
     testImplementation(libs.bundles.test)

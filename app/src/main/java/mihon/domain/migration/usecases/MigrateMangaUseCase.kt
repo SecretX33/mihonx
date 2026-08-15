@@ -1,9 +1,7 @@
 package mihon.domain.migration.usecases
 
-import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.hasCustomCover
-import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -11,6 +9,7 @@ import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import kotlinx.coroutines.CancellationException
 import mihon.domain.migration.models.MigrationFlag
+import mihon.domain.source.interactor.UpdateMangaFromRemote
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
@@ -27,7 +26,7 @@ import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
-import java.time.Instant
+import kotlin.time.Clock
 
 class MigrateMangaUseCase(
     private val sourcePreferences: SourcePreferences,
@@ -36,7 +35,6 @@ class MigrateMangaUseCase(
     private val downloadManager: DownloadManager,
     private val updateManga: UpdateManga,
     private val getChaptersByMangaId: GetChaptersByMangaId,
-    private val syncChaptersWithSource: SyncChaptersWithSource,
     private val updateChapter: UpdateChapter,
     private val getCategories: GetCategories,
     private val setMangaCategories: SetMangaCategories,
@@ -45,6 +43,7 @@ class MigrateMangaUseCase(
     private val coverCache: CoverCache,
     private val getHistory: GetHistory,
     private val upsertHistory: UpsertHistory,
+    private val updateMangaFromRemote: UpdateMangaFromRemote,
 ) {
     private val enhancedServices by lazy { trackerManager.trackers.filterIsInstance<EnhancedTracker>() }
 
@@ -54,13 +53,7 @@ class MigrateMangaUseCase(
         val flags = sourcePreferences.migrationFlags.get()
 
         try {
-            val chapters = targetSource.getChapterList(target.toSManga())
-
-            try {
-                syncChaptersWithSource.await(chapters, target, targetSource)
-            } catch (_: Exception) {
-                // Worst case, chapters won't be synced
-            }
+            updateMangaFromRemote(target, fetchChapters = true).getOrThrow()
 
             // Update chapters read, bookmark, dateFetch and history
             if (MigrationFlag.CHAPTER in flags) {
@@ -138,7 +131,7 @@ class MigrateMangaUseCase(
             }
             coverCache.deleteCustomCover(current.id)
 
-            val now = Instant.now().toEpochMilli()
+            val now = Clock.System.now().toEpochMilliseconds()
 
             val currentMangaUpdate = MangaUpdate(
                 id = current.id,

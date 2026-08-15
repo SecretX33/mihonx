@@ -1,15 +1,13 @@
 package tachiyomi.domain.manga.model
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import kotlinx.serialization.json.JsonObject
 
 sealed interface CustomMangaInfo {
-    /** Leave all custom columns exactly as they are (default). */
     data object KeepAll : CustomMangaInfo
 
-    /** Explicitly clear all custom columns (set all to `NULL`). */
     data object ClearAll : CustomMangaInfo
 
-    /** Write specific values; null inner field = clear that column. */
     data class Set(
         val title: String?,
         val author: String?,
@@ -44,6 +42,7 @@ data class MangaUpdate(
     val version: Long? = null,
     val notes: String? = null,
     val customInfo: CustomMangaInfo = CustomMangaInfo.KeepAll,
+    val memo: JsonObject? = null,
 )
 
 fun Manga.toMangaUpdate(): MangaUpdate {
@@ -70,5 +69,6 @@ fun Manga.toMangaUpdate(): MangaUpdate {
         initialized = initialized,
         version = version,
         notes = notes,
+        memo = memo,
     )
 }

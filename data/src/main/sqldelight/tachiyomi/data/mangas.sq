@@ -1,7 +1,8 @@
 import eu.kanade.tachiyomi.source.model.UpdateStrategy;
-import kotlin.collections.List;
 import kotlin.Boolean;
 import kotlin.String;
+import kotlin.collections.List;
+import kotlinx.serialization.json.JsonObject;
 
 CREATE TABLE mangas(
     _id INTEGER NOT NULL PRIMARY KEY,
@@ -34,7 +35,8 @@ CREATE TABLE mangas(
     custom_artist TEXT,
     custom_description TEXT,
     custom_genre TEXT AS List<String>,
-    custom_status INTEGER
+    custom_status INTEGER,
+    memo BLOB AS JsonObject NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX library_favorite_index ON mangas(favorite) WHERE favorite = 1;
@@ -168,6 +170,33 @@ FROM mangas
 WHERE next_update >= :startOfDay
 AND favorite = 1
 AND status IN :statuses
+AND (
+    -- includedEmpty being true expresses "don't care" state and bypasses the membership filter
+    :includedEmpty
+    OR EXISTS (
+        SELECT 1 FROM mangas_categories
+        WHERE mangas_categories.manga_id = mangas._id
+        AND COALESCE(mangas_categories.category_id, 0) IN :includedCategories
+    )
+    OR (0 IN :includedCategories AND NOT EXISTS (
+        SELECT 1 FROM mangas_categories WHERE mangas_categories.manga_id = mangas._id)
+    )
+)
+AND (
+    -- excludedEmpty being true expresses "don't care" state and bypasses the membership filter
+    :excludedEmpty
+    OR (
+        NOT EXISTS (
+            SELECT 1 FROM mangas_categories
+            WHERE mangas_categories.manga_id = mangas._id
+            AND COALESCE(mangas_categories.category_id, 0) IN :excludedCategories
+        )
+        AND (
+            0 NOT IN :excludedCategories
+            OR EXISTS (SELECT 1 FROM mangas_categories WHERE mangas_categories.manga_id = mangas._id)
+        )
+    )
+)
 ORDER BY next_update ASC;
 
 resetViewerFlags:
@@ -199,9 +228,10 @@ AND (
     )
 );
 
-insert:
-INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, custom_title, custom_author, custom_artist, custom_description, custom_genre, custom_status)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :customTitle, :customAuthor, :customArtist, :customDescription, :customGenre, :customStatus);
+insertReturningId:
+INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, custom_title, custom_author, custom_artist, custom_description, custom_genre, custom_status, memo)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :customTitle, :customAuthor, :customArtist, :customDescription, :customGenre, :customStatus, :memo)
+RETURNING _id;
 
 update:
 UPDATE mangas SET
@@ -232,23 +262,21 @@ UPDATE mangas SET
     custom_artist = CASE WHEN :updateCustomInfo = 1 THEN :customArtist ELSE custom_artist END,
     custom_description = CASE WHEN :updateCustomInfo = 1 THEN :customDescription ELSE custom_description END,
     custom_genre = CASE WHEN :updateCustomInfo = 1 THEN :customGenre ELSE custom_genre END,
-    custom_status = CASE WHEN :updateCustomInfo = 1 THEN :customStatus ELSE custom_status END
+    custom_status = CASE WHEN :updateCustomInfo = 1 THEN :customStatus ELSE custom_status END,
+    memo = coalesce(:memo, memo)
 WHERE _id = :mangaId;
-
-selectLastInsertedRowId:
-SELECT last_insert_rowid();
 
 insertNetworkManga {
     -- Insert the manga if it doesn't exist already
     INSERT INTO mangas(
         source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
         last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added,
-        update_strategy, calculate_interval, last_modified_at, version
+        update_strategy, calculate_interval, last_modified_at, version, memo
     )
     SELECT
         :source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite,
         :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded,
-        :updateStrategy, :calculateInterval, 0, :version
+        :updateStrategy, :calculateInterval, 0, :version, :memo
     WHERE NOT EXISTS(SELECT 0 FROM mangas WHERE source = :source AND url = :url);
 
     -- Update the relevant details if applicable and not favorite
@@ -262,7 +290,8 @@ insertNetworkManga {
         genre = CASE WHEN :updateDetails THEN :genre ELSE genre END,
         status = CASE WHEN :updateDetails THEN :status ELSE status END,
         update_strategy = CASE WHEN :updateDetails THEN :updateStrategy ELSE update_strategy END,
-        initialized = :updateDetails
+        initialized = :updateDetails,
+        memo = :memo
     WHERE source = :source
     AND url = :url
     AND favorite = 0;

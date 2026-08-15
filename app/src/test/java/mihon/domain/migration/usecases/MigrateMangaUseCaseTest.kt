@@ -1,6 +1,5 @@
 package mihon.domain.migration.usecases
 
-import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
@@ -18,6 +17,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.runBlocking
 import mihon.domain.migration.models.MigrationFlag
+import mihon.domain.source.interactor.UpdateMangaFromRemote
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tachiyomi.core.common.preference.Preference
@@ -44,7 +44,7 @@ class MigrateMangaUseCaseTest {
     private val downloadManager = mockk<DownloadManager>(relaxed = true)
     private val updateManga = mockk<UpdateManga>(relaxed = true)
     private val getChaptersByMangaId = mockk<GetChaptersByMangaId>()
-    private val syncChaptersWithSource = mockk<SyncChaptersWithSource>(relaxed = true)
+    private val updateMangaFromRemote = mockk<UpdateMangaFromRemote>()
     private val updateChapter = mockk<UpdateChapter>(relaxed = true)
     private val getCategories = mockk<GetCategories>(relaxed = true)
     private val setMangaCategories = mockk<SetMangaCategories>(relaxed = true)
@@ -61,7 +61,6 @@ class MigrateMangaUseCaseTest {
         downloadManager = downloadManager,
         updateManga = updateManga,
         getChaptersByMangaId = getChaptersByMangaId,
-        syncChaptersWithSource = syncChaptersWithSource,
         updateChapter = updateChapter,
         getCategories = getCategories,
         setMangaCategories = setMangaCategories,
@@ -70,6 +69,7 @@ class MigrateMangaUseCaseTest {
         coverCache = coverCache,
         getHistory = getHistory,
         upsertHistory = upsertHistory,
+        updateMangaFromRemote = updateMangaFromRemote,
     )
 
     private val current = Manga.create().copy(id = 1L, source = 10L)
@@ -86,6 +86,7 @@ class MigrateMangaUseCaseTest {
         every { sourceManager.get(target.source) } returns mockk<Source>(relaxed = true)
         every { sourceManager.get(current.source) } returns null
 
+        coEvery { updateMangaFromRemote(target, fetchChapters = true) } returns Result.success(mockk())
         coEvery { getTracks.await(current.id) } returns emptyList()
 
         coEvery { upsertHistory.awaitAll(capture(historyUpdatesSlot)) } just Runs

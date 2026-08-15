@@ -48,5 +48,6 @@ fun Chapter.toDomainChapter(): DomainChapter? {
         lastModifiedAt = last_modified,
         version = version,
         excluded = false,
+        memo = memo,
     )
 }

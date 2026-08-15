@@ -46,6 +46,7 @@ fun Manga.toSManga(): SManga = SManga.create().also {
     it.status = status.toInt()
     it.thumbnail_url = thumbnailUrl
     it.initialized = initialized
+    it.memo = memo
 }
 
 fun Manga.copyFrom(other: SManga): Manga {
@@ -67,6 +68,7 @@ fun Manga.copyFrom(other: SManga): Manga {
         status = other.status.toLong(),
         updateStrategy = other.update_strategy,
         initialized = other.initialized && initialized,
+        memo = other.memo,
     )
 }
 

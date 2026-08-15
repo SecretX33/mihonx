@@ -1,11 +1,13 @@
 package tachiyomi.data.manga
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import kotlinx.serialization.json.JsonObject
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaWithChapterCount
 
 object MangaMapper {
+    @Suppress("UNUSED_PARAMETER")
     fun mapManga(
         id: Long,
         source: Long,
@@ -30,7 +32,6 @@ object MangaMapper {
         lastModifiedAt: Long,
         favoriteModifiedAt: Long?,
         version: Long,
-        @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
         notes: String,
         customTitle: String?,
@@ -39,6 +40,7 @@ object MangaMapper {
         customDescription: String?,
         customGenre: List<String>?,
         customStatus: Long?,
+        memo: JsonObject,
     ): Manga = Manga(
         id = id,
         source = source,
@@ -70,6 +72,7 @@ object MangaMapper {
         customDescription = customDescription,
         customGenre = customGenre,
         customStatus = customStatus,
+        memo = memo,
     )
 
     fun mapLibraryManga(
@@ -104,6 +107,7 @@ object MangaMapper {
         customDescription: String?,
         customGenre: List<String>?,
         customStatus: Long?,
+        memo: JsonObject,
         totalCount: Long,
         readCount: Double,
         latestUpload: Long,
@@ -144,6 +148,7 @@ object MangaMapper {
             customDescription,
             customGenre,
             customStatus,
+            memo,
         ),
         categories = categories.split(",").map { it.toLong() },
         totalChapters = totalCount,
@@ -186,6 +191,7 @@ object MangaMapper {
         customDescription: String?,
         customGenre: List<String>?,
         customStatus: Long?,
+        memo: JsonObject,
         totalCount: Long,
     ): MangaWithChapterCount = MangaWithChapterCount(
         manga = mapManga(
@@ -220,6 +226,7 @@ object MangaMapper {
             customDescription,
             customGenre,
             customStatus,
+            memo,
         ),
         chapterCount = totalCount,
     )

@@ -1,5 +1,7 @@
 package tachiyomi.domain.chapter.model
 
+import kotlinx.serialization.json.JsonObject
+import mihon.core.common.extensions.EMPTY
 import kotlin.math.floor
 
 data class Chapter(
@@ -18,6 +20,7 @@ data class Chapter(
     val lastModifiedAt: Long,
     val version: Long,
     val excluded: Boolean,
+    val memo: JsonObject,
 ) {
     val isRecognizedNumber: Boolean
         get() = chapterNumber >= 0f
@@ -52,6 +55,7 @@ data class Chapter(
             lastModifiedAt = 0,
             version = 1,
             excluded = false,
+            memo = JsonObject.EMPTY,
         )
     }
 }
