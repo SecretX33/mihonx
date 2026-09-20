@@ -64,6 +64,7 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -171,50 +172,52 @@ class ReaderViewModel @JvmOverloads constructor(
         val selectedChapter = chapters.find { it.id == chapterId }
             ?: error("Requested chapter of id $chapterId not found in chapter list")
 
-        val chaptersForReader = when {
-            (readerPreferences.skipRead.get() || readerPreferences.skipFiltered.get()) -> {
-                val filteredChapters = chapters.filterNot {
-                    when {
-                        readerPreferences.skipRead.get() && it.read -> true
-                        readerPreferences.skipFiltered.get() -> {
-                            (manga.unreadFilterRaw == Manga.CHAPTER_SHOW_READ && !it.read) ||
-                                (manga.unreadFilterRaw == Manga.CHAPTER_SHOW_UNREAD && it.read) ||
-                                (
-                                    manga.downloadedFilterRaw == Manga.CHAPTER_SHOW_DOWNLOADED &&
-                                        !downloadManager.isChapterDownloaded(
-                                            it.name,
-                                            it.scanlator,
-                                            it.url,
-                                            manga.title,
-                                            manga.source,
-                                        )
-                                    ) ||
-                                (
-                                    manga.downloadedFilterRaw == Manga.CHAPTER_SHOW_NOT_DOWNLOADED &&
-                                        downloadManager.isChapterDownloaded(
-                                            it.name,
-                                            it.scanlator,
-                                            it.url,
-                                            manga.title,
-                                            manga.source,
-                                        )
-                                    ) ||
-                                (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_BOOKMARKED && !it.bookmark) ||
-                                (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_NOT_BOOKMARKED && it.bookmark) ||
-                                (manga.subChapterFilterRaw == Manga.CHAPTER_SHOW_SUB_CHAPTER && !it.isSubChapter) ||
-                                (manga.subChapterFilterRaw == Manga.CHAPTER_SHOW_NOT_SUB_CHAPTER && it.isSubChapter)
+        val chaptersForReader = chapters.filterExcludedChaptersForReader(selectedChapter).let { chapters ->
+            when {
+                (readerPreferences.skipRead.get() || readerPreferences.skipFiltered.get()) -> {
+                    val filteredChapters = chapters.filterNot {
+                        when {
+                            readerPreferences.skipRead.get() && it.read -> true
+                            readerPreferences.skipFiltered.get() -> {
+                                (manga.unreadFilterRaw == Manga.CHAPTER_SHOW_READ && !it.read) ||
+                                    (manga.unreadFilterRaw == Manga.CHAPTER_SHOW_UNREAD && it.read) ||
+                                    (
+                                        manga.downloadedFilterRaw == Manga.CHAPTER_SHOW_DOWNLOADED &&
+                                            !downloadManager.isChapterDownloaded(
+                                                it.name,
+                                                it.scanlator,
+                                                it.url,
+                                                manga.title,
+                                                manga.source,
+                                            )
+                                        ) ||
+                                    (
+                                        manga.downloadedFilterRaw == Manga.CHAPTER_SHOW_NOT_DOWNLOADED &&
+                                            downloadManager.isChapterDownloaded(
+                                                it.name,
+                                                it.scanlator,
+                                                it.url,
+                                                manga.title,
+                                                manga.source,
+                                            )
+                                        ) ||
+                                    (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_BOOKMARKED && !it.bookmark) ||
+                                    (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_NOT_BOOKMARKED && it.bookmark) ||
+                                    (manga.subChapterFilterRaw == Manga.CHAPTER_SHOW_SUB_CHAPTER && !it.isSubChapter) ||
+                                    (manga.subChapterFilterRaw == Manga.CHAPTER_SHOW_NOT_SUB_CHAPTER && it.isSubChapter)
+                            }
+                            else -> false
                         }
-                        else -> false
+                    }
+
+                    if (filteredChapters.any { it.id == chapterId }) {
+                        filteredChapters
+                    } else {
+                        filteredChapters + listOf(selectedChapter)
                     }
                 }
-
-                if (filteredChapters.any { it.id == chapterId }) {
-                    filteredChapters
-                } else {
-                    filteredChapters + listOf(selectedChapter)
-                }
+                else -> chapters
             }
-            else -> chapters
         }
 
         chaptersForReader
@@ -989,4 +992,8 @@ class ReaderViewModel @JvmOverloads constructor(
         data class ShareImage(val uri: Uri, val page: ReaderPage) : Event
         data class CopyImage(val uri: Uri) : Event
     }
+}
+
+internal fun List<Chapter>.filterExcludedChaptersForReader(selectedChapter: Chapter): List<Chapter> {
+    return filter { !it.excluded || it.id == selectedChapter.id }
 }

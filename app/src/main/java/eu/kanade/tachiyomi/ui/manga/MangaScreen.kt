@@ -250,7 +250,7 @@ class MangaScreen(
                 NavigatorAdaptiveSheet(
                     screen = TrackInfoDialogHomeScreen(
                         mangaId = successState.manga.id,
-                        mangaTitle = successState.manga.title,
+                        mangaTitle = successState.manga.effectiveTitle,
                         sourceId = successState.source.id,
                     ),
                     enableSwipeDismiss = { it.lastItem is TrackInfoDialogHomeScreen },
