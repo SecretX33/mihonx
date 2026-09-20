@@ -64,6 +64,7 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -173,7 +174,7 @@ class ReaderViewModel @JvmOverloads constructor(
 
         val chaptersForReader = when {
             (readerPreferences.skipRead.get() || readerPreferences.skipFiltered.get()) -> {
-                val filteredChapters = chapters.filterNot {
+                val filteredChapters = chapters.filterExcludedChaptersForReader(selectedChapter).filterNot {
                     when {
                         readerPreferences.skipRead.get() && it.read -> true
                         readerPreferences.skipFiltered.get() -> {
@@ -214,7 +215,7 @@ class ReaderViewModel @JvmOverloads constructor(
                     filteredChapters + listOf(selectedChapter)
                 }
             }
-            else -> chapters
+            else -> chapters.filterExcludedChaptersForReader(selectedChapter)
         }
 
         chaptersForReader
@@ -989,4 +990,8 @@ class ReaderViewModel @JvmOverloads constructor(
         data class ShareImage(val uri: Uri, val page: ReaderPage) : Event
         data class CopyImage(val uri: Uri) : Event
     }
+}
+
+internal fun List<Chapter>.filterExcludedChaptersForReader(selectedChapter: Chapter): List<Chapter> {
+    return filter { !it.excluded || it.id == selectedChapter.id }
 }
