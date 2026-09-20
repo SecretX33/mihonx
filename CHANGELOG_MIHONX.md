@@ -10,8 +10,8 @@ Backups are portable in both directions. Mihon `v0.20.4` backups restore in Miho
 
 ### User-facing changes
 
-- Edit a library entry's title, author, artist, description, genres, and status, or reset individual fields to their source values. Custom titles appear throughout the library and series screens.
-- Hide or unhide selected chapters, identify hidden chapters in the list, and filter between hidden and visible chapters.
+- Edit a library entry's title, author, artist, description, genres, and status, or reset individual fields to their source values. Custom titles appear throughout the library, series screens, and initial tracker search.
+- Hide or unhide selected chapters, identify hidden chapters in the list, and filter between hidden and visible chapters. Navigation skips hidden chapters during reader navigation and exclude them from library unread counts.
 - View chapter details such as its number, scanlator, upload and fetch dates, last-read date, read duration, and reading progress.
 - Filter subchapters separately. Reader navigation respects this choice when configured to skip filtered chapters.
 - Limit global and migration searches to pinned sources with a setting that persists between searches.

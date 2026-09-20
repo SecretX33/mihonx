@@ -1,11 +1,12 @@
 package tachiyomi.data
 
-import app.cash.sqldelight.db.QueryResult
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import tachiyomi.data.manga.MangaMapper
 
 class LibraryViewTest {
 
@@ -36,24 +37,27 @@ class LibraryViewTest {
                 )
                 driver.executeSql("INSERT INTO excluded_scanlators(manga_id, scanlator) VALUES (1, 'Ignored')")
 
-                driver.long("SELECT totalCount - readCount FROM libraryView WHERE _id = 1") shouldBe 1L
+                val database = Database(
+                    driver = driver,
+                    chaptersAdapter = Chapters.Adapter(MemoColumnAdapter),
+                    historyAdapter = History.Adapter(DateColumnAdapter),
+                    mangasAdapter = Mangas.Adapter(
+                        genreAdapter = StringListColumnAdapter,
+                        update_strategyAdapter = UpdateStrategyColumnAdapter,
+                        custom_genreAdapter = StringListColumnAdapter,
+                        memoAdapter = MemoColumnAdapter,
+                    ),
+                )
+
+                database.libraryViewQueries
+                    .library(MangaMapper::mapLibraryManga)
+                    .awaitAsOne()
+                    .unreadCount shouldBe 1L
             }
         }
     }
 
     private suspend fun SqlDriver.executeSql(sql: String) {
         execute(identifier = null, sql = sql, parameters = 0).await()
-    }
-
-    private suspend fun SqlDriver.long(sql: String): Long {
-        return executeQuery(
-            identifier = null,
-            sql = sql,
-            mapper = { cursor ->
-                check(cursor.next().value)
-                QueryResult.Value(cursor.getLong(0)!!)
-            },
-            parameters = 0,
-        ).await()
     }
 }
