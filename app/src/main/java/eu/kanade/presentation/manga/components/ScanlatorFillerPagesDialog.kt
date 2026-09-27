@@ -101,12 +101,11 @@ fun ScanlatorFillerPagesDialog(
                     }
                     Text(stringResource(message))
                 } else {
-                    Text(stringResource(MR.strings.filler_pages_zero_hint))
                     drafts.keys.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it }).forEach { scanlator ->
                         val draft = drafts.getValue(scanlator)
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.padding(start = 12.dp, top = 4.dp, end = 12.dp, bottom = 12.dp),
+                                modifier = Modifier.padding(start = 12.dp, top = 4.dp, end = 12.dp, bottom = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Row(
