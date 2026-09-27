@@ -46,6 +46,7 @@ class LibraryViewTest {
                         update_strategyAdapter = UpdateStrategyColumnAdapter,
                         custom_genreAdapter = StringListColumnAdapter,
                         memoAdapter = MemoColumnAdapter,
+                        scanlator_filler_pagesAdapter = MemoColumnAdapter,
                     ),
                 )
 

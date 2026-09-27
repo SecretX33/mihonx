@@ -6,10 +6,11 @@ This changelog records changes made by MihonX relative to its Mihon upstream. Fo
 
 Baseline: Mihon `v0.20.4` (`df6507256acce8e7f3660783a3db6dbd1a31b6b5`).
 
-Backups are portable in both directions. Mihon `v0.20.4` backups restore in MihonX, and MihonX backups restore in Mihon with common data intact. Mihon ignores fork-only custom series information and hidden chapter state, so those fields are not retained if a backup is restored and re-exported by Mihon. The applications keep separate live databases, which are not intended to be copied between installations.
+Backups are portable in both directions. Mihon `v0.20.4` backups restore in MihonX, and MihonX backups restore in Mihon with common data intact. Mihon ignores fork-only custom series information, hidden chapter state, and scanlator filler rules, so those fields are not retained if a backup is restored and re-exported by Mihon. The applications keep separate live databases, which are not intended to be copied between installations.
 
 ### User-facing changes
 
+- Skip configurable beginning and ending filler pages for each scanlator in a manga entry while reading.
 - Edit a library entry's title, author, artist, description, genres, and status, or reset individual fields to their source values. Custom titles appear throughout the library, series screens, and initial tracker search.
 - Hide or unhide selected chapters, identify hidden chapters in the list, and filter between hidden and visible chapters. Reader navigation skips hidden chapters, and library unread counts exclude them.
 - View chapter details such as its number, scanlator, upload and fetch dates, last-read date, read duration, and reading progress.

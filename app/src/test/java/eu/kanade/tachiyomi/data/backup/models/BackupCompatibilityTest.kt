@@ -8,6 +8,7 @@ import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.junit.jupiter.api.Test
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
 
 @OptIn(ExperimentalSerializationApi::class)
 class BackupCompatibilityTest {
@@ -47,6 +48,7 @@ class BackupCompatibilityTest {
         manga.initialized shouldBe true
         manga.customTitle shouldBe ""
         manga.customGenre shouldBe emptyList()
+        manga.scanlatorFillerPages shouldBe emptyList()
         chapter.url shouldBe "/chapter-1"
         chapter.name shouldBe "Chapter 1"
         chapter.read shouldBe true
@@ -56,6 +58,7 @@ class BackupCompatibilityTest {
 
     @Test
     fun `MihonX backup decodes in Mihon`() {
+        val fillerRules = mapOf("Alpha" to ScanlatorFillerPages(2, 1))
         val backup = Backup(
             backupManga = listOf(
                 BackupManga(
@@ -77,7 +80,7 @@ class BackupCompatibilityTest {
                     customTitle = "Custom series",
                     customAuthor = "Custom author",
                     customGenre = listOf("Custom genre"),
-                    memo = "{}".encodeToByteArray(),
+                    scanlatorFillerPages = listOf(BackupScanlatorFillerPages("Alpha", 2, 1)),
                 ),
             ),
         )
@@ -91,6 +94,8 @@ class BackupCompatibilityTest {
         manga.title shouldBe "Series"
         manga.notes shouldBe "Notes"
         manga.initialized shouldBe true
+        val restored = ProtoBuf.decodeFromByteArray<Backup>(ProtoBuf.encodeToByteArray(backup))
+        restored.backupManga.single().getMangaImpl().scanlatorFillerPages shouldBe fillerRules
         chapter.url shouldBe "/chapter-1"
         chapter.name shouldBe "Chapter 1"
         chapter.read shouldBe true
@@ -115,6 +120,7 @@ class BackupCompatibilityTest {
                     ),
                     notes = "Notes",
                     customTitle = "Custom series",
+                    scanlatorFillerPages = listOf(BackupScanlatorFillerPages("Alpha", 2, 1)),
                 ),
             ),
         )
@@ -129,6 +135,7 @@ class BackupCompatibilityTest {
         manga.title shouldBe "Series"
         manga.notes shouldBe "Notes"
         manga.customTitle shouldBe ""
+        manga.scanlatorFillerPages shouldBe emptyList()
         chapter.url shouldBe "/chapter-1"
         chapter.name shouldBe "Chapter 1"
         chapter.read shouldBe true

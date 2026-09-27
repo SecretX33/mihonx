@@ -43,6 +43,7 @@ data class MangaUpdate(
     val notes: String? = null,
     val customInfo: CustomMangaInfo = CustomMangaInfo.KeepAll,
     val memo: JsonObject? = null,
+    val scanlatorFillerPages: Map<String, ScanlatorFillerPages>? = null,
 )
 
 fun Manga.toMangaUpdate(): MangaUpdate {
@@ -70,5 +71,6 @@ fun Manga.toMangaUpdate(): MangaUpdate {
         version = version,
         notes = notes,
         memo = memo,
+        scanlatorFillerPages = scanlatorFillerPages,
     )
 }

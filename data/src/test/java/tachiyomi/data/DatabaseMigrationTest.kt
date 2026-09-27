@@ -29,6 +29,7 @@ class DatabaseMigrationTest {
                 "custom_genre",
                 "custom_status",
                 "memo",
+                "scanlator_filler_pages",
             )
             driver.columns("chapters").shouldContainAll("excluded", "memo")
             driver.columns("extension_store").shouldContainAll("extension_list_url")
@@ -40,7 +41,7 @@ class DatabaseMigrationTest {
         withDriver { driver ->
             driver.createVersion11Fixture()
 
-            Database.Schema.migrate(driver, oldVersion = 11, newVersion = 14).await()
+            Database.Schema.migrate(driver, oldVersion = 11, newVersion = 15).await()
 
             driver.columns("mangas").shouldContainAll(
                 "custom_title",
@@ -50,6 +51,7 @@ class DatabaseMigrationTest {
                 "custom_genre",
                 "custom_status",
                 "memo",
+                "scanlator_filler_pages",
             )
             driver.columns("chapters").shouldContainAll("excluded", "memo")
             driver.string("SELECT index_url FROM extension_store") shouldBe "https://example.org/repo.json"
@@ -63,7 +65,7 @@ class DatabaseMigrationTest {
         withDriver { driver ->
             driver.createVersion13Fixture()
 
-            Database.Schema.migrate(driver, oldVersion = 13, newVersion = 14).await()
+            Database.Schema.migrate(driver, oldVersion = 13, newVersion = 15).await()
 
             driver.string("SELECT custom_title FROM mangas") shouldBe "Custom title"
             driver.string("SELECT custom_author FROM mangas") shouldBe "Custom author"
@@ -73,6 +75,7 @@ class DatabaseMigrationTest {
             driver.string("SELECT badge_label FROM extension_store") shouldBe "EX"
             driver.string("SELECT extension_list_url FROM extension_store") shouldBe null
             driver.columns("mangas").shouldContainAll("memo")
+            driver.columns("mangas").shouldContainAll("scanlator_filler_pages")
             driver.columns("chapters").shouldContainAll("memo")
             driver.tableExists("extension_repos") shouldBe false
         }

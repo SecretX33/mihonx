@@ -1090,4 +1090,11 @@
     <string name="chapter_info_last_read">Last read</string>
     <string name="chapter_info_read_duration">Read duration</string>
     <string name="chapter_info_reading_progress">Reading progress</string>
+    <string name="skip_filler_pages">Skip filler pages</string>
+    <string name="filler_pages_beginning">Beginning</string>
+    <string name="filler_pages_end">End</string>
+    <string name="filler_pages_zero_hint">Set a count to 0 to show those pages again.</string>
+    <string name="filler_pages_add_scanlator">Add scanlator</string>
+    <string name="filler_pages_none_configured">No scanlators added yet</string>
+    <string name="unknown_scanlator">Unknown scanlator</string>
 </resources>

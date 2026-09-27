@@ -54,6 +54,7 @@ class BackupManga(
     @ProtoNumber(804) var customDescription: String = "",
     @ProtoNumber(805) var customGenre: List<String> = emptyList(),
     @ProtoNumber(112) var memo: ByteArray = JsonObjectEmptyBytes,
+    @ProtoNumber(806) var scanlatorFillerPages: List<BackupScanlatorFillerPages> = emptyList(),
 ) {
     fun getMangaImpl(): Manga {
         return Manga.create().copy(
@@ -83,6 +84,9 @@ class BackupManga(
             customGenre = this@BackupManga.customGenre.takeIf { it.isNotEmpty() },
             customStatus = this@BackupManga.customStatus.toLong().takeIf { it != 0L },
             memo = MemoColumnAdapter.decode(this@BackupManga.memo),
+            scanlatorFillerPages = this@BackupManga.scanlatorFillerPages.mapNotNull { rule ->
+                rule.toDomain()?.let { rule.scanlator to it }
+            }.toMap(),
         )
     }
 }

@@ -36,6 +36,7 @@ import eu.kanade.presentation.manga.EditMangaDialog
 import eu.kanade.presentation.manga.MangaScreen
 import eu.kanade.presentation.manga.components.DeleteChaptersDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
+import eu.kanade.presentation.manga.components.ScanlatorFillerPagesDialog
 import eu.kanade.presentation.manga.components.ScanlatorFilterDialog
 import eu.kanade.presentation.manga.components.SetIntervalDialog
 import eu.kanade.presentation.util.AssistContentScreen
@@ -181,6 +182,7 @@ class MangaScreen(
         )
 
         var showScanlatorsDialog by remember { mutableStateOf(false) }
+        var showFillerPagesDialog by remember { mutableStateOf(false) }
 
         val onDismissRequest = { viewModel.dismissDialog() }
         when (val dialog = successState.dialog) {
@@ -245,6 +247,7 @@ class MangaScreen(
                 onResetToDefault = viewModel::resetToDefaultSettings,
                 scanlatorFilterActive = successState.scanlatorFilterActive,
                 onScanlatorFilterClicked = { showScanlatorsDialog = true },
+                onFillerPagesClicked = { showFillerPagesDialog = true },
             )
             MangaViewModel.Dialog.TrackSheet -> {
                 NavigatorAdaptiveSheet(
@@ -321,6 +324,15 @@ class MangaScreen(
                 excludedScanlators = successState.excludedScanlators,
                 onDismissRequest = { showScanlatorsDialog = false },
                 onConfirm = viewModel::setExcludedScanlators,
+            )
+        }
+        if (showFillerPagesDialog) {
+            ScanlatorFillerPagesDialog(
+                availableScanlators = successState.availableScanlators,
+                hasUnlabeledChapters = successState.chapters.any { it.chapter.scanlator.isNullOrBlank() },
+                rules = successState.manga.scanlatorFillerPages,
+                onDismissRequest = { showFillerPagesDialog = false },
+                onConfirm = viewModel::setScanlatorFillerPages,
             )
         }
     }

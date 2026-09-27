@@ -23,7 +23,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
-import kotlin.math.min
 
 /**
  * Implementation of a [Viewer] to display pages with a [ViewPager].
@@ -73,7 +72,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                 awaitingIdleViewerChapters?.let { viewerChapters ->
                     setChaptersInternal(viewerChapters)
                     awaitingIdleViewerChapters = null
-                    if (viewerChapters.currChapter.pages?.size == 1) {
+                    if (viewerChapters.currChapter.navigablePages?.size == 1) {
                         adapter.nextTransition?.to?.let(activity::requestPreloadChapter)
                     }
                 }
@@ -223,7 +222,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * activity of the change and requests the preload of the next chapter if this is the last page.
      */
     private fun onReaderPageSelected(page: ReaderPage, allowPreload: Boolean, forward: Boolean) {
-        val pages = page.chapter.pages ?: return
+        val pages = page.chapter.navigablePages ?: return
         logcat { "onReaderPageSelected: ${page.number}/${pages.size}" }
         activity.onPageSelected(page)
 
@@ -236,7 +235,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         }
 
         // Preload next chapter once we're within the last 5 pages of the current chapter
-        val inPreloadRange = pages.size - page.number < 5
+        val inPreloadRange = pages.last().index - page.index < 5
         if (inPreloadRange && allowPreload && page.chapter == adapter.currentChapter) {
             logcat { "Request preload next chapter because we're at page ${page.number} of ${pages.size}" }
             adapter.nextTransition?.to?.let(activity::requestPreloadChapter)
@@ -285,8 +284,8 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         // Layout the pager once a chapter is being set
         if (pager.isGone) {
             logcat { "Pager first layout" }
-            val pages = chapters.currChapter.pages ?: return
-            moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
+            val page = chapters.currChapter.pageAtOrNearest(chapters.currChapter.requestedPage) ?: return
+            moveToPage(page)
             pager.isVisible = true
         }
 
