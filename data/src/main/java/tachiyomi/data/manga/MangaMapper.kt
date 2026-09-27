@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonObject
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaWithChapterCount
+import tachiyomi.domain.manga.model.toScanlatorFillerPages
 
 object MangaMapper {
     @Suppress("UNUSED_PARAMETER")
@@ -41,6 +42,7 @@ object MangaMapper {
         customGenre: List<String>?,
         customStatus: Long?,
         memo: JsonObject,
+        scanlatorFillerPages: JsonObject,
     ): Manga = Manga(
         id = id,
         source = source,
@@ -73,6 +75,7 @@ object MangaMapper {
         customGenre = customGenre,
         customStatus = customStatus,
         memo = memo,
+        scanlatorFillerPages = scanlatorFillerPages.toScanlatorFillerPages(),
     )
 
     fun mapLibraryManga(
@@ -108,6 +111,7 @@ object MangaMapper {
         customGenre: List<String>?,
         customStatus: Long?,
         memo: JsonObject,
+        scanlatorFillerPages: JsonObject,
         totalCount: Long,
         readCount: Double,
         latestUpload: Long,
@@ -149,6 +153,7 @@ object MangaMapper {
             customGenre,
             customStatus,
             memo,
+            scanlatorFillerPages,
         ),
         categories = categories.split(",").map { it.toLong() },
         totalChapters = totalCount,
@@ -192,6 +197,7 @@ object MangaMapper {
         customGenre: List<String>?,
         customStatus: Long?,
         memo: JsonObject,
+        scanlatorFillerPages: JsonObject,
         totalCount: Long,
     ): MangaWithChapterCount = MangaWithChapterCount(
         manga = mapManga(
@@ -227,6 +233,7 @@ object MangaMapper {
             customGenre,
             customStatus,
             memo,
+            scanlatorFillerPages,
         ),
         chapterCount = totalCount,
     )

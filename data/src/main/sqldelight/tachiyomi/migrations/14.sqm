@@ -1,0 +1,1 @@
+ALTER TABLE mangas ADD COLUMN scanlator_filler_pages BLOB NOT NULL DEFAULT '{}';

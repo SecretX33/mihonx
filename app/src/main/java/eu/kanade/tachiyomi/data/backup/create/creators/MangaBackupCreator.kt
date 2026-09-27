@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.data.backup.create.BackupOptions
 import eu.kanade.tachiyomi.data.backup.models.BackupChapter
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
+import eu.kanade.tachiyomi.data.backup.models.BackupScanlatorFillerPages
 import eu.kanade.tachiyomi.data.backup.models.backupChapterMapper
 import eu.kanade.tachiyomi.data.backup.models.backupTrackMapper
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
@@ -115,4 +116,7 @@ private fun Manga.toBackupManga() =
         customGenre = this.customGenre ?: emptyList(),
         customStatus = this.customStatus?.toInt() ?: 0,
         memo = MemoColumnAdapter.encode(this.memo),
+        scanlatorFillerPages = this.scanlatorFillerPages.map { (scanlator, counts) ->
+            BackupScanlatorFillerPages(scanlator, counts.beginning, counts.end)
+        },
     )

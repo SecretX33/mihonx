@@ -82,6 +82,7 @@ class AppModule(val app: Application) : InjektModule {
                     update_strategyAdapter = UpdateStrategyColumnAdapter,
                     custom_genreAdapter = StringListColumnAdapter,
                     memoAdapter = MemoColumnAdapter,
+                    scanlator_filler_pagesAdapter = MemoColumnAdapter,
                 ),
                 chaptersAdapter = Chapters.Adapter(
                     memoAdapter = MemoColumnAdapter,

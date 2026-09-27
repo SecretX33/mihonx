@@ -48,6 +48,7 @@ data class Manga(
     val customDescription: String? = null,
     val customGenre: List<String>? = null,
     val customStatus: Long? = null,
+    val scanlatorFillerPages: Map<String, ScanlatorFillerPages> = emptyMap(),
 ) : JavaSerializable {
 
     val effectiveTitle: String get() = customTitle ?: title

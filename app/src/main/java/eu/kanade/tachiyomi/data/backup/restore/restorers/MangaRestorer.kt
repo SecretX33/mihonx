@@ -20,7 +20,7 @@ import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.interactor.FetchInterval
 import tachiyomi.domain.manga.interactor.GetMangaByUrlAndSourceId
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.model.withPreservedScanlatorFillerPages
+import tachiyomi.domain.manga.model.toScanlatorFillerPagesJson
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
 import tachiyomi.domain.track.model.Track
@@ -93,10 +93,8 @@ class MangaRestorer(
         } else {
             manga.copyFrom(dbManga)
         }
-        val memo = merged.memo
-            .withPreservedScanlatorFillerPages(dbManga.memo)
-            .withPreservedScanlatorFillerPages(manga.memo)
-        return updateManga(merged.copy(id = dbManga.id, memo = memo))
+        val fillerPages = manga.scanlatorFillerPages.ifEmpty { dbManga.scanlatorFillerPages }
+        return updateManga(merged.copy(id = dbManga.id, scanlatorFillerPages = fillerPages))
     }
 
     private fun Manga.copyFrom(newer: Manga): Manga {
@@ -152,6 +150,9 @@ class MangaRestorer(
             customGenre = manga.customGenre,
             customStatus = manga.customStatus,
             memo = manga.memo.let(MemoColumnAdapter::encode),
+            scanlatorFillerPages = manga.scanlatorFillerPages.toScanlatorFillerPagesJson().let(
+                MemoColumnAdapter::encode,
+            ),
         )
         return manga
     }
@@ -287,6 +288,7 @@ class MangaRestorer(
             customGenre = manga.customGenre,
             customStatus = manga.customStatus,
             memo = manga.memo,
+            scanlatorFillerPages = manga.scanlatorFillerPages.toScanlatorFillerPagesJson(),
         )
             .awaitAsOne()
     }

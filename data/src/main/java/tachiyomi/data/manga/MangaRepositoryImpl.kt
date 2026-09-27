@@ -21,6 +21,7 @@ import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
+import tachiyomi.domain.manga.model.toScanlatorFillerPagesJson
 import tachiyomi.domain.manga.repository.MangaRepository
 import kotlin.time.Clock
 
@@ -219,6 +220,9 @@ class MangaRepositoryImpl(
                     customGenre = (customInfo as? CustomMangaInfo.Set)?.genre,
                     customStatus = (customInfo as? CustomMangaInfo.Set)?.status,
                     memo = value.memo?.let(MemoColumnAdapter::encode),
+                    scanlatorFillerPages = value.scanlatorFillerPages?.toScanlatorFillerPagesJson()?.let(
+                        MemoColumnAdapter::encode,
+                    ),
                 )
             }
         }

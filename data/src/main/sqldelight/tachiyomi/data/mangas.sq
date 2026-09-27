@@ -36,7 +36,8 @@ CREATE TABLE mangas(
     custom_description TEXT,
     custom_genre TEXT AS List<String>,
     custom_status INTEGER,
-    memo BLOB AS JsonObject NOT NULL DEFAULT '{}'
+    memo BLOB AS JsonObject NOT NULL DEFAULT '{}',
+    scanlator_filler_pages BLOB AS JsonObject NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX library_favorite_index ON mangas(favorite) WHERE favorite = 1;
@@ -229,8 +230,8 @@ AND (
 );
 
 insertReturningId:
-INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, custom_title, custom_author, custom_artist, custom_description, custom_genre, custom_status, memo)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :customTitle, :customAuthor, :customArtist, :customDescription, :customGenre, :customStatus, :memo)
+INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, custom_title, custom_author, custom_artist, custom_description, custom_genre, custom_status, memo, scanlator_filler_pages)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :customTitle, :customAuthor, :customArtist, :customDescription, :customGenre, :customStatus, :memo, :scanlatorFillerPages)
 RETURNING _id;
 
 update:
@@ -263,7 +264,8 @@ UPDATE mangas SET
     custom_description = CASE WHEN :updateCustomInfo = 1 THEN :customDescription ELSE custom_description END,
     custom_genre = CASE WHEN :updateCustomInfo = 1 THEN :customGenre ELSE custom_genre END,
     custom_status = CASE WHEN :updateCustomInfo = 1 THEN :customStatus ELSE custom_status END,
-    memo = coalesce(:memo, memo)
+    memo = coalesce(:memo, memo),
+    scanlator_filler_pages = coalesce(:scanlatorFillerPages, scanlator_filler_pages)
 WHERE _id = :mangaId;
 
 insertNetworkManga {

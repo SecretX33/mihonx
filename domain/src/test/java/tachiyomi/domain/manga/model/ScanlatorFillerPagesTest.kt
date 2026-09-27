@@ -2,7 +2,6 @@ package tachiyomi.domain.manga.model
 
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 
 class ScanlatorFillerPagesTest {
@@ -14,17 +13,14 @@ class ScanlatorFillerPagesTest {
     }
 
     @Test
-    fun `rules keep unrelated manga memo and can be removed`() {
-        val sourceMemo = JsonObject(mapOf("source" to JsonPrimitive("metadata")))
+    fun `rules serialize separately from manga memo`() {
         val rules = mapOf(
             "Alpha" to ScanlatorFillerPages(2, 1),
             "" to ScanlatorFillerPages(1, 0),
         )
-        val saved = sourceMemo.withScanlatorFillerPages(rules)
+        val saved = rules.toScanlatorFillerPagesJson()
 
-        saved.scanlatorFillerPages() shouldBe rules
-        saved["source"] shouldBe JsonPrimitive("metadata")
-        saved.withScanlatorFillerPages(emptyMap()).scanlatorFillerPages() shouldBe emptyMap()
-        sourceMemo.withPreservedScanlatorFillerPages(saved).scanlatorFillerPages() shouldBe rules
+        saved.toScanlatorFillerPages() shouldBe rules
+        emptyMap<String, ScanlatorFillerPages>().toScanlatorFillerPagesJson() shouldBe JsonObject(emptyMap())
     }
 }

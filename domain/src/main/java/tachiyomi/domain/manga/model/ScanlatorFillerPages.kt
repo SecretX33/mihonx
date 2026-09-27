@@ -1,9 +1,11 @@
 package tachiyomi.domain.manga.model
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 
+@Serializable
 data class ScanlatorFillerPages(val beginning: Int = 0, val end: Int = 0) {
     init {
         require(beginning >= 0 && end >= 0)
@@ -17,13 +19,10 @@ data class ScanlatorFillerPages(val beginning: Int = 0, val end: Int = 0) {
     }
 }
 
-private const val FILLER_PAGES_KEY = "mihonx_scanlator_filler_pages"
-
 fun scanlatorFillerKey(scanlator: String?): String = scanlator?.takeUnless { it.isBlank() } ?: ""
 
-fun JsonObject.scanlatorFillerPages(): Map<String, ScanlatorFillerPages> {
-    val stored = get(FILLER_PAGES_KEY) as? JsonObject ?: return emptyMap()
-    return stored.mapNotNull { (scanlator, value) ->
+fun JsonObject.toScanlatorFillerPages(): Map<String, ScanlatorFillerPages> {
+    return mapNotNull { (scanlator, value) ->
         val counts = value as? JsonObject ?: return@mapNotNull null
         val beginning = (counts["beginning"] as? JsonPrimitive)?.intOrNull ?: 0
         val end = (counts["end"] as? JsonPrimitive)?.intOrNull ?: 0
@@ -35,32 +34,15 @@ fun JsonObject.scanlatorFillerPages(): Map<String, ScanlatorFillerPages> {
     }.toMap()
 }
 
-fun JsonObject.withScanlatorFillerPages(rules: Map<String, ScanlatorFillerPages>): JsonObject {
-    val normalized = rules.filterValues { it.beginning > 0 || it.end > 0 }
+fun Map<String, ScanlatorFillerPages>.toScanlatorFillerPagesJson(): JsonObject {
     return JsonObject(
-        toMutableMap().apply {
-            if (normalized.isEmpty()) {
-                remove(FILLER_PAGES_KEY)
-            } else {
-                put(
-                    FILLER_PAGES_KEY,
-                    JsonObject(
-                        normalized.mapValues { (_, counts) ->
-                            JsonObject(
-                                mapOf(
-                                    "beginning" to JsonPrimitive(counts.beginning),
-                                    "end" to JsonPrimitive(counts.end),
-                                ),
-                            )
-                        },
-                    ),
-                )
-            }
+        filterValues { it.beginning > 0 || it.end > 0 }.mapValues { (_, counts) ->
+            JsonObject(
+                mapOf(
+                    "beginning" to JsonPrimitive(counts.beginning),
+                    "end" to JsonPrimitive(counts.end),
+                ),
+            )
         },
     )
-}
-
-fun JsonObject.withPreservedScanlatorFillerPages(from: JsonObject): JsonObject {
-    val value = from[FILLER_PAGES_KEY] ?: return this
-    return JsonObject(toMutableMap().apply { put(FILLER_PAGES_KEY, value) })
 }

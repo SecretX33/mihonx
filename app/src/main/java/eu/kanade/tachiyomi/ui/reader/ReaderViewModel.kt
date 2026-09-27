@@ -76,7 +76,6 @@ import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.ScanlatorFillerPages
 import tachiyomi.domain.manga.model.scanlatorFillerKey
-import tachiyomi.domain.manga.model.scanlatorFillerPages
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
@@ -170,7 +169,7 @@ class ReaderViewModel @JvmOverloads constructor(
      */
     private val chapterList by lazy {
         val manga = manga!!
-        val fillerRules = manga.memo.scanlatorFillerPages()
+        val fillerRules = manga.scanlatorFillerPages
         val chapters = runBlocking { getChaptersByMangaId.await(manga.id, applyScanlatorFilter = true) }
 
         val selectedChapter = chapters.find { it.id == chapterId }
