@@ -1,11 +1,15 @@
 package tachiyomi.domain.manga.model
 
+import android.annotation.SuppressLint
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
+@Immutable
 data class ScanlatorFillerPages(val beginning: Int = 0, val end: Int = 0) {
     init {
         require(beginning >= 0 && end >= 0)
