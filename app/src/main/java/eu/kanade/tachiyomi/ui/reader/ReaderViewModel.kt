@@ -74,6 +74,9 @@ import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
+import tachiyomi.domain.manga.model.scanlatorFillerKey
+import tachiyomi.domain.manga.model.scanlatorFillerPages
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
@@ -167,6 +170,7 @@ class ReaderViewModel @JvmOverloads constructor(
      */
     private val chapterList by lazy {
         val manga = manga!!
+        val fillerRules = manga.memo.scanlatorFillerPages()
         val chapters = runBlocking { getChaptersByMangaId.await(manga.id, applyScanlatorFilter = true) }
 
         val selectedChapter = chapters.find { it.id == chapterId }
@@ -237,7 +241,9 @@ class ReaderViewModel @JvmOverloads constructor(
                 }
             }
             .map { it.toDbChapter() }
-            .map(::ReaderChapter)
+            .map { chapter ->
+                ReaderChapter(chapter, fillerRules[scanlatorFillerKey(chapter.scanlator)] ?: ScanlatorFillerPages())
+            }
     }
 
     private val incognitoMode: Boolean by lazy { getIncognitoState.await(manga?.source) }
@@ -549,7 +555,8 @@ class ReaderViewModel @JvmOverloads constructor(
         if (!incognitoMode && page.status !is Page.State.Error) {
             readerChapter.chapter.last_page_read = pageIndex
 
-            if (readerChapter.pages?.lastIndex == pageIndex) {
+            if (readerChapter.isLastNavigablePage(page)) {
+                readerChapter.chapter.last_page_read = readerChapter.pages?.lastIndex ?: pageIndex
                 updateChapterProgressOnComplete(readerChapter)
             }
 

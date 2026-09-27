@@ -662,7 +662,7 @@ class ReaderActivity : BaseActivity() {
     private fun moveToPageIndex(index: Int) {
         val viewer = viewModel.state.value.viewer ?: return
         val currentChapter = viewModel.state.value.currentChapter ?: return
-        val page = currentChapter.pages?.getOrNull(index) ?: return
+        val page = currentChapter.pageAtOrNearest(index) ?: return
         viewer.moveToPage(page)
     }
 

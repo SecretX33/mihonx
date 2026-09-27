@@ -81,7 +81,9 @@ import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
 import tachiyomi.domain.manga.model.applyFilter
+import tachiyomi.domain.manga.model.withScanlatorFillerPages
 import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
@@ -1215,6 +1217,13 @@ class MangaViewModel(
     fun setExcludedScanlators(excludedScanlators: Set<String>) {
         viewModelScope.launchIO {
             setExcludedScanlators.await(mangaId, excludedScanlators)
+        }
+    }
+
+    fun setScanlatorFillerPages(rules: Map<String, ScanlatorFillerPages>) {
+        viewModelScope.launchIO {
+            val manga = mangaRepository.getMangaById(mangaId)
+            mangaRepository.update(MangaUpdate(id = mangaId, memo = manga.memo.withScanlatorFillerPages(rules)))
         }
     }
 

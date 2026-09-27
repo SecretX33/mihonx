@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.PeopleAlt
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -54,6 +55,7 @@ fun ChapterSettingsDialog(
     onExcludedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: (() -> Unit),
+    onFillerPagesClicked: () -> Unit,
     onSortModeChanged: (Long) -> Unit,
     onDisplayModeChanged: (Long) -> Unit,
     onSetAsDefault: (applyToExistingManga: Boolean) -> Unit,
@@ -114,6 +116,7 @@ fun ChapterSettingsDialog(
                         onExcludedFilterChanged = onExcludedFilterChanged,
                         scanlatorFilterActive = scanlatorFilterActive,
                         onScanlatorFilterClicked = onScanlatorFilterClicked,
+                        onFillerPagesClicked = onFillerPagesClicked,
                     )
                 }
                 1 -> {
@@ -148,6 +151,7 @@ private fun ColumnScope.FilterPage(
     onExcludedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: (() -> Unit),
+    onFillerPagesClicked: () -> Unit,
 ) {
     TriStateItem(
         label = stringResource(MR.strings.label_downloaded),
@@ -178,6 +182,17 @@ private fun ColumnScope.FilterPage(
         active = scanlatorFilterActive,
         onClick = onScanlatorFilterClicked,
     )
+    Row(
+        modifier = Modifier
+            .clickable(onClick = onFillerPagesClicked)
+            .fillMaxWidth()
+            .padding(horizontal = TabbedDialogPaddings.Horizontal, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        Icon(imageVector = Icons.Outlined.Tune, contentDescription = null)
+        Text(text = stringResource(MR.strings.skip_filler_pages), style = MaterialTheme.typography.bodyMedium)
+    }
 }
 
 @Composable

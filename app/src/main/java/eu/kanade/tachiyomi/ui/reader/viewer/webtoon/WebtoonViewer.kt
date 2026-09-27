@@ -206,12 +206,12 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * activity of the change and requests the preload of the next chapter if this is the last page.
      */
     private fun onPageSelected(page: ReaderPage, allowPreload: Boolean) {
-        val pages = page.chapter.pages ?: return
+        val pages = page.chapter.navigablePages ?: return
         logcat { "onPageSelected: ${page.number}/${pages.size}" }
         activity.onPageSelected(page)
 
         // Preload next chapter once we're within the last 5 pages of the current chapter
-        val inPreloadRange = pages.size - page.number < 5
+        val inPreloadRange = pages.last().index - page.index < 5
         if (inPreloadRange && allowPreload && page.chapter == adapter.currentChapter) {
             logcat { "Request preload next chapter because we're at page ${page.number} of ${pages.size}" }
             val nextItem = adapter.items.getOrNull(adapter.items.size - 1)
@@ -245,8 +245,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
         if (recycler.isGone) {
             logcat { "Recycler first layout" }
-            val pages = chapters.currChapter.pages ?: return
-            moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
+            val page = chapters.currChapter.pageAtOrNearest(chapters.currChapter.requestedPage) ?: return
+            moveToPage(page)
             recycler.isVisible = true
         }
     }

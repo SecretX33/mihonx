@@ -20,6 +20,7 @@ import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.interactor.FetchInterval
 import tachiyomi.domain.manga.interactor.GetMangaByUrlAndSourceId
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.withPreservedScanlatorFillerPages
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
 import tachiyomi.domain.track.model.Track
@@ -87,11 +88,15 @@ class MangaRestorer(
     }
 
     private suspend fun restoreExistingManga(manga: Manga, dbManga: Manga): Manga {
-        return if (manga.version > dbManga.version) {
-            updateManga(dbManga.copyFrom(manga).copy(id = dbManga.id))
+        val merged = if (manga.version > dbManga.version) {
+            dbManga.copyFrom(manga)
         } else {
-            updateManga(manga.copyFrom(dbManga).copy(id = dbManga.id))
+            manga.copyFrom(dbManga)
         }
+        val memo = merged.memo
+            .withPreservedScanlatorFillerPages(dbManga.memo)
+            .withPreservedScanlatorFillerPages(manga.memo)
+        return updateManga(merged.copy(id = dbManga.id, memo = memo))
     }
 
     private fun Manga.copyFrom(newer: Manga): Manga {

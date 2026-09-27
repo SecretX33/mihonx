@@ -10,6 +10,7 @@ Backups are portable in both directions. Mihon `v0.20.4` backups restore in Miho
 
 ### User-facing changes
 
+- Skip configurable beginning and ending filler pages for each scanlator in a manga entry while reading.
 - Edit a library entry's title, author, artist, description, genres, and status, or reset individual fields to their source values. Custom titles appear throughout the library, series screens, and initial tracker search.
 - Hide or unhide selected chapters, identify hidden chapters in the list, and filter between hidden and visible chapters. Reader navigation skips hidden chapters, and library unread counts exclude them.
 - View chapter details such as its number, scanlator, upload and fetch dates, last-read date, read duration, and reading progress.

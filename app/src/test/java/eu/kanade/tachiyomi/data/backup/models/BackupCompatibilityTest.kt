@@ -5,9 +5,14 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.junit.jupiter.api.Test
+import tachiyomi.data.MemoColumnAdapter
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
+import tachiyomi.domain.manga.model.scanlatorFillerPages
+import tachiyomi.domain.manga.model.withScanlatorFillerPages
 
 @OptIn(ExperimentalSerializationApi::class)
 class BackupCompatibilityTest {
@@ -56,6 +61,7 @@ class BackupCompatibilityTest {
 
     @Test
     fun `MihonX backup decodes in Mihon`() {
+        val fillerRules = mapOf("Alpha" to ScanlatorFillerPages(2, 1))
         val backup = Backup(
             backupManga = listOf(
                 BackupManga(
@@ -77,7 +83,7 @@ class BackupCompatibilityTest {
                     customTitle = "Custom series",
                     customAuthor = "Custom author",
                     customGenre = listOf("Custom genre"),
-                    memo = "{}".encodeToByteArray(),
+                    memo = MemoColumnAdapter.encode(JsonObject(emptyMap()).withScanlatorFillerPages(fillerRules)),
                 ),
             ),
         )
@@ -91,6 +97,7 @@ class BackupCompatibilityTest {
         manga.title shouldBe "Series"
         manga.notes shouldBe "Notes"
         manga.initialized shouldBe true
+        MemoColumnAdapter.decode(manga.memo).scanlatorFillerPages() shouldBe fillerRules
         chapter.url shouldBe "/chapter-1"
         chapter.name shouldBe "Chapter 1"
         chapter.read shouldBe true

@@ -17,6 +17,7 @@ import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
+import tachiyomi.domain.manga.model.withPreservedScanlatorFillerPages
 import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.isLocal
@@ -133,7 +134,7 @@ class UpdateMangaFromRemote(
                 status = remoteManga.status.toLong(),
                 updateStrategy = remoteManga.update_strategy,
                 initialized = true,
-                memo = remoteManga.memo,
+                memo = remoteManga.memo.withPreservedScanlatorFillerPages(localManga.memo),
             ),
         )
         if (success && title != null) {
