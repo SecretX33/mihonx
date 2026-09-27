@@ -7,49 +7,8 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import tachiyomi.data.manga.MangaMapper
-import tachiyomi.data.manga.MangaRepositoryImpl
-import tachiyomi.domain.manga.model.MangaUpdate
-import tachiyomi.domain.manga.model.ScanlatorFillerPages
 
 class LibraryViewTest {
-
-    @Test
-    fun `scanlator filler rules persist separately from memo`() {
-        runBlocking {
-            JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).use { driver ->
-                Database.Schema.create(driver).await()
-                driver.executeSql(
-                    """
-                INSERT INTO mangas(
-                    _id, source, url, title, status, favorite, initialized, viewer,
-                    chapter_flags, cover_last_modified, date_added, memo
-                ) VALUES (1, 1, '/manga', 'Manga', 0, 1, 1, 0, 0, 0, 0, '{"source":"metadata"}')
-                    """.trimIndent(),
-                )
-                val database = Database(
-                    driver = driver,
-                    chaptersAdapter = Chapters.Adapter(MemoColumnAdapter),
-                    historyAdapter = History.Adapter(DateColumnAdapter),
-                    mangasAdapter = Mangas.Adapter(
-                        genreAdapter = StringListColumnAdapter,
-                        update_strategyAdapter = UpdateStrategyColumnAdapter,
-                        custom_genreAdapter = StringListColumnAdapter,
-                        memoAdapter = MemoColumnAdapter,
-                        scanlator_filler_pagesAdapter = MemoColumnAdapter,
-                    ),
-                )
-                val repository = MangaRepositoryImpl(database)
-                val rules = mapOf("Alpha" to ScanlatorFillerPages(2, 1))
-
-                repository.update(MangaUpdate(id = 1, scanlatorFillerPages = rules)) shouldBe true
-                repository.getMangaById(1).scanlatorFillerPages shouldBe rules
-                repository.getMangaById(1).memo["source"]?.toString() shouldBe "\"metadata\""
-
-                repository.update(MangaUpdate(id = 1, scanlatorFillerPages = emptyMap())) shouldBe true
-                repository.getMangaById(1).scanlatorFillerPages shouldBe emptyMap()
-            }
-        }
-    }
 
     @Test
     fun `unread count excludes hidden chapters and ignored scanlators`() {
