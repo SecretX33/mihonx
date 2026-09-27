@@ -27,7 +27,7 @@ fun JsonObject.scanlatorFillerPages(): Map<String, ScanlatorFillerPages> {
         val counts = value as? JsonObject ?: return@mapNotNull null
         val beginning = (counts["beginning"] as? JsonPrimitive)?.intOrNull ?: 0
         val end = (counts["end"] as? JsonPrimitive)?.intOrNull ?: 0
-        if (beginning < 0 || end < 0 || beginning == 0 && end == 0) {
+        if (beginning < 0 || end < 0 || (beginning == 0 && end == 0)) {
             null
         } else {
             scanlator to ScanlatorFillerPages(beginning, end)
@@ -37,18 +37,27 @@ fun JsonObject.scanlatorFillerPages(): Map<String, ScanlatorFillerPages> {
 
 fun JsonObject.withScanlatorFillerPages(rules: Map<String, ScanlatorFillerPages>): JsonObject {
     val normalized = rules.filterValues { it.beginning > 0 || it.end > 0 }
-    return JsonObject(toMutableMap().apply {
-        if (normalized.isEmpty()) {
-            remove(FILLER_PAGES_KEY)
-        } else {
-            put(
-                FILLER_PAGES_KEY,
-                JsonObject(normalized.mapValues { (_, counts) ->
-                    JsonObject(mapOf("beginning" to JsonPrimitive(counts.beginning), "end" to JsonPrimitive(counts.end)))
-                }),
-            )
-        }
-    })
+    return JsonObject(
+        toMutableMap().apply {
+            if (normalized.isEmpty()) {
+                remove(FILLER_PAGES_KEY)
+            } else {
+                put(
+                    FILLER_PAGES_KEY,
+                    JsonObject(
+                        normalized.mapValues { (_, counts) ->
+                            JsonObject(
+                                mapOf(
+                                    "beginning" to JsonPrimitive(counts.beginning),
+                                    "end" to JsonPrimitive(counts.end),
+                                ),
+                            )
+                        },
+                    ),
+                )
+            }
+        },
+    )
 }
 
 fun JsonObject.withPreservedScanlatorFillerPages(from: JsonObject): JsonObject {

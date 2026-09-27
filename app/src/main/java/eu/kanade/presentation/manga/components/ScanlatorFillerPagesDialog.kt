@@ -69,7 +69,9 @@ fun ScanlatorFillerPagesDialog(
         title = { Text(stringResource(MR.strings.skip_filler_pages)) },
         text = {
             Column(
-                modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Box {
@@ -91,11 +93,12 @@ fun ScanlatorFillerPagesDialog(
                     }
                 }
                 if (drafts.isEmpty()) {
-                    Text(
-                        stringResource(
-                            if (available.isEmpty()) MR.strings.no_scanlators_found else MR.strings.filler_pages_none_configured,
-                        ),
-                    )
+                    val message = if (available.isEmpty()) {
+                        MR.strings.no_scanlators_found
+                    } else {
+                        MR.strings.filler_pages_none_configured
+                    }
+                    Text(stringResource(message))
                 } else {
                     Text(stringResource(MR.strings.filler_pages_zero_hint))
                     drafts.keys.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it }).forEach { scanlator ->
@@ -151,10 +154,12 @@ fun ScanlatorFillerPagesDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onConfirm(drafts.mapNotNull { (scanlator, draft) ->
-                        val counts = ScanlatorFillerPages(draft.first.toInt(), draft.second.toInt())
-                        if (counts.beginning == 0 && counts.end == 0) null else scanlator to counts
-                    }.toMap())
+                    onConfirm(
+                        drafts.mapNotNull { (scanlator, draft) ->
+                            val counts = ScanlatorFillerPages(draft.first.toInt(), draft.second.toInt())
+                            if (counts.beginning == 0 && counts.end == 0) null else scanlator to counts
+                        }.toMap(),
+                    )
                     onDismissRequest()
                 },
                 enabled = valid,
