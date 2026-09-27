@@ -21,6 +21,11 @@ data class ScanlatorFillerPages(val beginning: Int = 0, val end: Int = 0) {
         val last = pageCount - 1 - end.coerceAtMost(pageCount - 1 - first)
         return first..last
     }
+
+    fun displayPageNumber(pageIndex: Long, pageCount: Int? = null): Long {
+        val first = pageCount?.takeIf { it > 0 }?.let { visiblePageIndices(it).first } ?: beginning
+        return (pageIndex - first + 1).coerceAtLeast(1)
+    }
 }
 
 fun scanlatorFillerKey(scanlator: String?): String = scanlator?.takeUnless { it.isBlank() } ?: ""

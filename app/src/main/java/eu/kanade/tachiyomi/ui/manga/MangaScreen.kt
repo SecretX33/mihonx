@@ -65,6 +65,8 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
+import tachiyomi.domain.manga.model.scanlatorFillerKey
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 class MangaScreen(
@@ -201,6 +203,8 @@ class MangaScreen(
                 ChapterInfoDialog(
                     chapter = dialog.chapter,
                     history = dialog.history,
+                    fillerPages = successState.manga.scanlatorFillerPages[scanlatorFillerKey(dialog.chapter.scanlator)]
+                        ?: ScanlatorFillerPages(),
                     onDismissRequest = onDismissRequest,
                 )
             }

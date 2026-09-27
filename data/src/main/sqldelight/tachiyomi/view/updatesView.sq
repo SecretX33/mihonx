@@ -26,14 +26,14 @@ AND date_fetch > date_added
 ORDER BY date_fetch DESC;
 
 getRecentUpdates:
-SELECT *
-FROM updatesView
+SELECT updatesView.*, mangas.scanlator_filler_pages
+FROM updatesView JOIN mangas ON mangas._id = updatesView.mangaId
 WHERE dateUpload > :after
 LIMIT :limit;
 
 getRecentUpdatesWithFilters:
-SELECT *
-FROM updatesView
+SELECT updatesView.*, mangas.scanlator_filler_pages
+FROM updatesView JOIN mangas ON mangas._id = updatesView.mangaId
 WHERE dateUpload > :after
 AND (:read IS NULL OR read = :read)
 -- Started means some progress but not finished, Read means finished chapter, thus:
@@ -76,8 +76,8 @@ AND (
 LIMIT :limit;
 
 getUpdatesByReadStatus:
-SELECT *
-FROM updatesView
+SELECT updatesView.*, mangas.scanlator_filler_pages
+FROM updatesView JOIN mangas ON mangas._id = updatesView.mangaId
 WHERE read = :read
 AND dateUpload > :after
 LIMIT :limit;

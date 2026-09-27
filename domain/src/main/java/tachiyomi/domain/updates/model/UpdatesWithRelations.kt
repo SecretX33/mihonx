@@ -1,6 +1,7 @@
 package tachiyomi.domain.updates.model
 
 import tachiyomi.domain.manga.model.MangaCover
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
 
 data class UpdatesWithRelations(
     val mangaId: Long,
@@ -15,4 +16,5 @@ data class UpdatesWithRelations(
     val sourceId: Long,
     val dateFetch: Long,
     val coverData: MangaCover,
+    val scanlatorFillerPages: Map<String, ScanlatorFillerPages>,
 )

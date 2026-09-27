@@ -978,6 +978,19 @@ class ReaderViewModel @JvmOverloads constructor(
 
         val totalPages: Int
             get() = currentChapter?.pages?.size ?: -1
+
+        val visiblePageIndices: kotlin.ranges.IntRange?
+            get() = totalPages.takeIf { it > 0 }?.let { currentChapter?.fillerPages?.visiblePageIndices(it) }
+
+        val displayCurrentPage: Int
+            get() = if (currentPage < 1) {
+                currentPage
+            } else {
+                visiblePageIndices?.let { (currentPage - it.first).coerceIn(1, it.count()) } ?: currentPage
+            }
+
+        val displayTotalPages: Int
+            get() = visiblePageIndices?.count() ?: totalPages
     }
 
     sealed interface Dialog {

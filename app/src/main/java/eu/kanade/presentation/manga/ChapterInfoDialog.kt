@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.model.History
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import java.text.DateFormat
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit
 fun ChapterInfoDialog(
     chapter: Chapter,
     history: History?,
+    fillerPages: ScanlatorFillerPages,
     onDismissRequest: () -> Unit,
 ) {
     val dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
@@ -61,7 +63,10 @@ fun ChapterInfoDialog(
                 if (!chapter.read && chapter.lastPageRead > 0) {
                     InfoRow(
                         label = stringResource(MR.strings.chapter_info_reading_progress),
-                        value = stringResource(MR.strings.chapter_progress, chapter.lastPageRead + 1),
+                        value = stringResource(
+                            MR.strings.chapter_progress,
+                            fillerPages.displayPageNumber(chapter.lastPageRead),
+                        ),
                     )
                 }
                 if (!chapter.scanlator.isNullOrBlank()) {

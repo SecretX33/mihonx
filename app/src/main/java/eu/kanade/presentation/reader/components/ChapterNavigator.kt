@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalSlider
@@ -35,7 +36,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -69,6 +72,9 @@ fun ChapterNavigator(
     enabledPrevious: Boolean,
     currentPage: Int,
     totalPages: Int,
+    displayCurrentPage: Int,
+    displayTotalPages: Int,
+    visiblePageIndices: IntRange?,
     onPageIndexChange: (Int) -> Unit,
     onPageIndexChangeFinished: () -> Unit,
     modifier: Modifier = Modifier,
@@ -114,8 +120,10 @@ fun ChapterNavigator(
             enabledNext = enabledNext,
             onPreviousChapter = onPreviousChapter,
             enabledPrevious = enabledPrevious,
-            currentPage = currentPage,
             totalPages = totalPages,
+            displayCurrentPage = displayCurrentPage,
+            displayTotalPages = displayTotalPages,
+            visiblePageIndices = visiblePageIndices,
             interactionSource = interactionSource,
             mainAxisPadding = mainAxisPadding,
             backgroundColor = backgroundColor,
@@ -129,8 +137,10 @@ fun ChapterNavigator(
             enabledNext = enabledNext,
             onPreviousChapter = onPreviousChapter,
             enabledPrevious = enabledPrevious,
-            currentPage = currentPage,
             totalPages = totalPages,
+            displayCurrentPage = displayCurrentPage,
+            displayTotalPages = displayTotalPages,
+            visiblePageIndices = visiblePageIndices,
             interactionSource = interactionSource,
             mainAxisPadding = mainAxisPadding,
             backgroundColor = backgroundColor,
@@ -148,8 +158,10 @@ fun HorizontalChapterNavigator(
     enabledNext: Boolean,
     onPreviousChapter: () -> Unit,
     enabledPrevious: Boolean,
-    currentPage: Int,
     totalPages: Int,
+    displayCurrentPage: Int,
+    displayTotalPages: Int,
+    visiblePageIndices: IntRange?,
     interactionSource: MutableInteractionSource,
     mainAxisPadding: Dp,
     backgroundColor: Color,
@@ -190,9 +202,9 @@ fun HorizontalChapterNavigator(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(contentAlignment = Alignment.CenterEnd) {
-                            Text(text = currentPage.toString())
-                            // Taking up full length so the slider doesn't shift when 'currentPage' length changes
-                            Text(text = totalPages.toString(), color = Color.Transparent)
+                            Text(text = displayCurrentPage.toString())
+                            // Keep the slider still when the displayed page number gains a digit
+                            Text(text = displayTotalPages.toString(), color = Color.Transparent)
                         }
 
                         Slider(
@@ -201,9 +213,10 @@ fun HorizontalChapterNavigator(
                                 .weight(1f)
                                 .padding(horizontal = 8.dp),
                             interactionSource = interactionSource,
+                            track = { FillerPageTrack(it, totalPages, visiblePageIndices, vertical = false) },
                         )
 
-                        Text(text = totalPages.toString())
+                        Text(text = displayTotalPages.toString())
                     }
                 }
             } else {
@@ -233,8 +246,10 @@ fun VerticalChapterNavigator(
     enabledNext: Boolean,
     onPreviousChapter: () -> Unit,
     enabledPrevious: Boolean,
-    currentPage: Int,
     totalPages: Int,
+    displayCurrentPage: Int,
+    displayTotalPages: Int,
+    visiblePageIndices: IntRange?,
     interactionSource: MutableInteractionSource,
     mainAxisPadding: Dp,
     backgroundColor: Color,
@@ -268,7 +283,7 @@ fun VerticalChapterNavigator(
                     .padding(vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(text = currentPage.toString())
+                Text(text = displayCurrentPage.toString())
 
                 VerticalSlider(
                     state = state,
@@ -276,9 +291,10 @@ fun VerticalChapterNavigator(
                         .weight(1f)
                         .padding(vertical = 8.dp),
                     interactionSource = interactionSource,
+                    track = { FillerPageTrack(it, totalPages, visiblePageIndices, vertical = true) },
                 )
 
-                Text(text = totalPages.toString())
+                Text(text = displayTotalPages.toString())
             }
         } else {
             Spacer(Modifier.weight(1f))
@@ -298,6 +314,39 @@ fun VerticalChapterNavigator(
     }
 }
 
+@Composable
+private fun FillerPageTrack(
+    state: SliderState,
+    totalPages: Int,
+    visiblePageIndices: IntRange?,
+    vertical: Boolean,
+) {
+    val fillerColor = Color(0xFFFF9800)
+    SliderDefaults.Track(
+        sliderState = state,
+        modifier = Modifier.drawWithContent {
+            drawContent()
+            val visible = visiblePageIndices ?: return@drawWithContent
+            if (totalPages < 2) return@drawWithContent
+            val length = if (vertical) size.height else size.width
+            val inset = if (vertical) size.width / 2 else size.height / 2
+            val radius = 3.dp.toPx()
+            fun drawFiller(index: Int) {
+                val position = inset + (length - inset * 2) * index / (totalPages - 1)
+                val center = if (vertical) {
+                    Offset(size.width / 2, position)
+                } else {
+                    val x = if (layoutDirection == LayoutDirection.Rtl) size.width - position else position
+                    Offset(x, size.height / 2)
+                }
+                drawCircle(fillerColor, radius, center)
+            }
+            for (index in 0 until visible.first) drawFiller(index)
+            for (index in visible.last + 1 until totalPages) drawFiller(index)
+        },
+    )
+}
+
 @Preview
 @Composable
 private fun ChapterNavigatorPreview() {
@@ -311,6 +360,9 @@ private fun ChapterNavigatorPreview() {
             enabledPrevious = true,
             currentPage = currentPage,
             totalPages = 10,
+            displayCurrentPage = currentPage,
+            displayTotalPages = 10,
+            visiblePageIndices = 0..9,
             onPageIndexChange = { currentPage = (it + 1) },
             onPageIndexChangeFinished = {},
         )

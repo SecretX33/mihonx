@@ -2,10 +2,12 @@ package tachiyomi.data.updates
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonObject
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.data.Database
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.manga.model.MangaCover
+import tachiyomi.domain.manga.model.toScanlatorFillerPages
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.domain.updates.repository.UpdatesRepository
 
@@ -88,6 +90,7 @@ class UpdatesRepositoryImpl(
         dateUpload: Long,
         dateFetch: Long,
         excludedScanlator: String?,
+        scanlatorFillerPages: JsonObject,
     ): UpdatesWithRelations = UpdatesWithRelations(
         mangaId = mangaId,
         mangaTitle = mangaTitle,
@@ -98,6 +101,7 @@ class UpdatesRepositoryImpl(
         read = read,
         bookmark = bookmark,
         lastPageRead = lastPageRead,
+        scanlatorFillerPages = scanlatorFillerPages.toScanlatorFillerPages(),
         sourceId = sourceId,
         dateFetch = dateFetch,
         coverData = MangaCover(

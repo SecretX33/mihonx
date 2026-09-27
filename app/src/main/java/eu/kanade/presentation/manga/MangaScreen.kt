@@ -66,6 +66,7 @@ import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.service.missingChaptersCount
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.scanlatorFillerKey
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.TwoPanelBox
@@ -806,7 +807,8 @@ private fun LazyListScope.sharedChapterItems(
                         ?.let {
                             stringResource(
                                 MR.strings.chapter_progress,
-                                it + 1,
+                                manga.scanlatorFillerPages[scanlatorFillerKey(item.chapter.scanlator)]
+                                    ?.displayPageNumber(it) ?: (it + 1),
                             )
                         },
                     scanlator = item.chapter.scanlator.takeIf { !it.isNullOrBlank() },
