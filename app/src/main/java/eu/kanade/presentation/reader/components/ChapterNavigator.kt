@@ -330,7 +330,7 @@ private fun FillerPageTrack(
             if (totalPages < 2) return@drawWithContent
             val length = if (vertical) size.height else size.width
             val inset = if (vertical) size.width / 2 else size.height / 2
-            val radius = 3.dp.toPx()
+            val radius = SliderDefaults.TickSize.toPx() / 2f
             fun drawFiller(index: Int) {
                 val position = inset + (length - inset * 2) * index / (totalPages - 1)
                 val center = if (vertical) {

@@ -106,7 +106,7 @@ fun ScanlatorFillerPagesDialog(
                         val draft = drafts.getValue(scanlator)
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(start = 12.dp, top = 4.dp, end = 12.dp, bottom = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Row(
