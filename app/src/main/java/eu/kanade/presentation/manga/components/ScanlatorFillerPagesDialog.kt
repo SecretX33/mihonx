@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -100,12 +101,11 @@ fun ScanlatorFillerPagesDialog(
                     }
                     Text(stringResource(message))
                 } else {
-                    Text(stringResource(MR.strings.filler_pages_zero_hint))
                     drafts.keys.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it }).forEach { scanlator ->
                         val draft = drafts.getValue(scanlator)
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(start = 12.dp, top = 4.dp, end = 12.dp, bottom = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Row(
@@ -123,28 +123,16 @@ fun ScanlatorFillerPagesDialog(
                                         )
                                     }
                                 }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(
-                                        value = draft.first,
-                                        onValueChange = { value ->
-                                            if (value.all(Char::isDigit)) drafts[scanlator] = value to draft.second
-                                        },
-                                        label = { Text(stringResource(MR.strings.filler_pages_beginning)) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    OutlinedTextField(
-                                        value = draft.second,
-                                        onValueChange = { value ->
-                                            if (value.all(Char::isDigit)) drafts[scanlator] = draft.first to value
-                                        },
-                                        label = { Text(stringResource(MR.strings.filler_pages_end)) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                }
+                                FillerPageCountField(
+                                    value = draft.first,
+                                    label = stringResource(MR.strings.filler_pages_beginning),
+                                    onValueChange = { drafts[scanlator] = it to draft.second },
+                                )
+                                FillerPageCountField(
+                                    value = draft.second,
+                                    label = stringResource(MR.strings.filler_pages_end),
+                                    onValueChange = { drafts[scanlator] = draft.first to it },
+                                )
                             }
                         }
                     }
@@ -173,4 +161,31 @@ fun ScanlatorFillerPagesDialog(
             }
         },
     )
+}
+
+@Composable
+private fun FillerPageCountField(value: String, label: String, onValueChange: (String) -> Unit) {
+    val count = value.toIntOrNull()
+    val canIncrease = count != null && count < Int.MAX_VALUE
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = {
+            count?.let { onValueChange((it - 1).toString()) }
+        }, enabled = count != null && count > 0) {
+            Icon(Icons.Outlined.Remove, contentDescription = stringResource(MR.strings.filler_pages_decrease, label))
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = { if (it.all(Char::isDigit)) onValueChange(it) },
+            label = { Text(label) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(
+            onClick = { count?.let { onValueChange((it + 1).toString()) } },
+            enabled = canIncrease,
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = stringResource(MR.strings.filler_pages_increase, label))
+        }
+    }
 }

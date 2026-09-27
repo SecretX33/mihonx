@@ -40,6 +40,7 @@ import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
+import tachiyomi.domain.manga.model.scanlatorFillerKey
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ListGroupHeader
@@ -97,6 +98,11 @@ internal fun LazyListScope.updatesUiItems(
             }
             is UpdatesUiModel.Item -> {
                 val updatesItem = item.item
+                val fillerPages = updatesItem.update.scanlatorFillerPages[
+                    scanlatorFillerKey(
+                        updatesItem.update.scanlator,
+                    ),
+                ]
                 UpdatesUiItem(
                     modifier = Modifier.animateItem(),
                     update = updatesItem.update,
@@ -106,7 +112,7 @@ internal fun LazyListScope.updatesUiItems(
                         ?.let {
                             stringResource(
                                 MR.strings.chapter_progress,
-                                it + 1,
+                                fillerPages?.displayPageNumber(it) ?: (it + 1),
                             )
                         },
                     onLongClick = {

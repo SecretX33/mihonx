@@ -13,6 +13,15 @@ class ScanlatorFillerPagesTest {
     }
 
     @Test
+    fun `display numbers subtract the effective beginning offset`() {
+        val fillers = ScanlatorFillerPages(beginning = 2, end = 1)
+        fillers.displayPageNumber(2, 8) shouldBe 1L
+        fillers.displayPageNumber(6, 8) shouldBe 5L
+        fillers.displayPageNumber(1) shouldBe 1L
+        fillers.displayPageNumber(1, 2) shouldBe 1L
+    }
+
+    @Test
     fun `rules serialize separately from manga memo`() {
         val rules = mapOf(
             "Alpha" to ScanlatorFillerPages(2, 1),
