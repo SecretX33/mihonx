@@ -5,10 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -17,6 +22,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -35,7 +44,6 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.LabeledCheckbox
-import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -79,23 +87,56 @@ internal fun Screen.MigrateMangaDialog(
                 state.applicableFlags.fastForEach { flag ->
                     if (flag == MigrationFlag.COVER) {
                         val keepCover = flag in state.selectedFlags
-                        Text(stringResource(MR.strings.migration_cover), style = MaterialTheme.typography.titleSmall)
-                        RadioItem(
-                            label = stringResource(
-                                when {
-                                    state.hasCoverLink -> MR.strings.migration_keep_cover_link
-                                    state.hasCustomCover -> MR.strings.migration_keep_custom_cover
-                                    else -> MR.strings.migration_keep_source_cover
-                                },
-                            ),
-                            selected = keepCover,
-                            onClick = { if (!keepCover) viewModel.toggleSelection(flag) },
+                        val currentDescription = stringResource(
+                            when {
+                                state.hasCoverLink -> MR.strings.migration_keep_cover_link
+                                state.hasCustomCover -> MR.strings.migration_keep_custom_cover
+                                else -> MR.strings.migration_keep_source_cover
+                            },
                         )
-                        RadioItem(
-                            label = stringResource(MR.strings.migration_use_destination_cover),
-                            selected = !keepCover,
-                            onClick = { if (keepCover) viewModel.toggleSelection(flag) },
-                        )
+                        val destinationDescription = stringResource(MR.strings.migration_use_destination_cover)
+                        Column(
+                            modifier = Modifier.padding(top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                stringResource(MR.strings.migration_cover),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                                SegmentedButton(
+                                    selected = keepCover,
+                                    onClick = { if (!keepCover) viewModel.toggleSelection(flag) },
+                                    shape = SegmentedButtonDefaults.itemShape(0, 2),
+                                    modifier = Modifier.semantics { contentDescription = currentDescription },
+                                    icon = {},
+                                ) {
+                                    Text(
+                                        stringResource(MR.strings.migration_cover_current),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                SegmentedButton(
+                                    selected = !keepCover,
+                                    onClick = { if (keepCover) viewModel.toggleSelection(flag) },
+                                    shape = SegmentedButtonDefaults.itemShape(1, 2),
+                                    modifier = Modifier.semantics { contentDescription = destinationDescription },
+                                    icon = {},
+                                ) {
+                                    Text(
+                                        stringResource(MR.strings.migration_cover_destination),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Text(
+                                text = if (keepCover) currentDescription else destinationDescription,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     } else {
                         LabeledCheckbox(
                             label = stringResource(flag.getLabel()),

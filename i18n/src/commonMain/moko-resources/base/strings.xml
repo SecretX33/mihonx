@@ -1108,6 +1108,8 @@
     <string name="cover_link_selected">Linked cover selected</string>
     <string name="cover_link_unavailable">The linked cover is unavailable. The existing cover will be used until it becomes available.</string>
     <string name="migration_cover">Cover</string>
+    <string name="migration_cover_current">Current</string>
+    <string name="migration_cover_destination">Destination</string>
     <string name="migration_keep_cover">Keep current cover</string>
     <string name="migration_keep_source_cover">Keep current source cover</string>
     <string name="migration_keep_cover_link">Keep current cover link</string>
