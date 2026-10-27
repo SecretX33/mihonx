@@ -23,6 +23,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import kotlinx.coroutines.flow.update
 import mihon.core.viewmodel.StateViewModel
@@ -34,6 +35,7 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.LabeledCheckbox
+import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -75,11 +77,32 @@ internal fun Screen.MigrateMangaDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
             ) {
                 state.applicableFlags.fastForEach { flag ->
-                    LabeledCheckbox(
-                        label = stringResource(flag.getLabel()),
-                        checked = flag in state.selectedFlags,
-                        onCheckedChange = { viewModel.toggleSelection(flag) },
-                    )
+                    if (flag == MigrationFlag.COVER) {
+                        val keepCover = flag in state.selectedFlags
+                        Text(stringResource(MR.strings.migration_cover), style = MaterialTheme.typography.titleSmall)
+                        RadioItem(
+                            label = stringResource(
+                                when {
+                                    state.hasCoverLink -> MR.strings.migration_keep_cover_link
+                                    state.hasCustomCover -> MR.strings.migration_keep_custom_cover
+                                    else -> MR.strings.migration_keep_source_cover
+                                },
+                            ),
+                            selected = keepCover,
+                            onClick = { if (!keepCover) viewModel.toggleSelection(flag) },
+                        )
+                        RadioItem(
+                            label = stringResource(MR.strings.migration_use_destination_cover),
+                            selected = !keepCover,
+                            onClick = { if (keepCover) viewModel.toggleSelection(flag) },
+                        )
+                    } else {
+                        LabeledCheckbox(
+                            label = stringResource(flag.getLabel()),
+                            checked = flag in state.selectedFlags,
+                            onCheckedChange = { viewModel.toggleSelection(flag) },
+                        )
+                    }
                 }
             }
         },
@@ -128,6 +151,7 @@ class MigrateDialogViewModel(
     private val coverCache: CoverCache = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val migrateManga: MigrateMangaUseCase = Injekt.get(),
+    private val coverLinkStore: CoverLinkStore = Injekt.get(),
 ) : StateViewModel<MigrateDialogViewModel.State>(State()) {
 
     fun init(current: Manga, target: Manga) {
@@ -136,12 +160,13 @@ class MigrateDialogViewModel(
                 val applicable = when (it) {
                     MigrationFlag.CHAPTER -> true
                     MigrationFlag.CATEGORY -> true
-                    MigrationFlag.CUSTOM_INFO -> current.hasCustomCover(coverCache) ||
+                    MigrationFlag.CUSTOM_INFO ->
                         current.customTitle != null || current.customAuthor != null ||
-                        current.customArtist != null || current.customDescription != null ||
-                        current.customGenre != null || current.customStatus != null
+                            current.customArtist != null || current.customDescription != null ||
+                            current.customGenre != null || current.customStatus != null
                     MigrationFlag.NOTES -> current.notes.isNotBlank()
                     MigrationFlag.REMOVE_DOWNLOAD -> downloadManager.getDownloadCount(current) > 0
+                    MigrationFlag.COVER -> true
                 }
                 if (applicable) add(it)
             }
@@ -153,6 +178,8 @@ class MigrateDialogViewModel(
                 target = target,
                 applicableFlags = applicableFlags,
                 selectedFlags = selectedFlags,
+                hasCoverLink = coverLinkStore.get(current) != null,
+                hasCustomCover = current.hasCustomCover(coverCache),
             )
         }
     }
@@ -181,6 +208,8 @@ class MigrateDialogViewModel(
         val target: Manga? = null,
         val applicableFlags: List<MigrationFlag> = emptyList(),
         val selectedFlags: Set<MigrationFlag> = emptySet(),
+        val hasCoverLink: Boolean = false,
+        val hasCustomCover: Boolean = false,
         val isMigrating: Boolean = false,
         val isMigrated: Boolean = false,
     )

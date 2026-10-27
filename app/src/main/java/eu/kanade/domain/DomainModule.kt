@@ -137,6 +137,7 @@ class DomainModule : InjektModule {
         addFactory {
             MigrateMangaUseCase(
                 get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
+                coverLinkStore = get(),
             )
         }
 

@@ -1107,4 +1107,10 @@
     <string name="cover_link_fallback">Using existing cover as fallback</string>
     <string name="cover_link_selected">Linked cover selected</string>
     <string name="cover_link_unavailable">The linked cover is unavailable. The existing cover will be used until it becomes available.</string>
+    <string name="migration_cover">Cover</string>
+    <string name="migration_keep_cover">Keep current cover</string>
+    <string name="migration_keep_source_cover">Keep current source cover</string>
+    <string name="migration_keep_cover_link">Keep current cover link</string>
+    <string name="migration_keep_custom_cover">Keep current custom cover</string>
+    <string name="migration_use_destination_cover">Use destination source cover</string>
 </resources>
