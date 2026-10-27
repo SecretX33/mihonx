@@ -59,6 +59,37 @@ class CoverLinkStoreTest {
     }
 
     @Test
+    fun `self link clears an existing alternate cover`() = runTest {
+        val store = CoverLinkStore(preferences())
+        store.set(manga, link)
+        store.set(manga, CoverLink(manga.source, manga.url, manga.title, "Original source"))
+
+        store.get(manga) shouldBe null
+        store.observe(manga).first() shouldBe null
+        store.isEmpty() shouldBe true
+    }
+
+    @Test
+    fun `self links from old preferences are ignored`() = runTest {
+        val preferences = preferences()
+        preferences.getStringSet("mihonx_cover_links").set(
+            setOf(
+                """
+                {
+                    "manga": {"sourceId": 10, "url": "/original"},
+                    "cover": {"sourceId": 10, "url": "/original", "title": "Original", "sourceName": "Source"}
+                }
+                """.trimIndent(),
+            ),
+        )
+        val store = CoverLinkStore(preferences)
+
+        store.get(manga) shouldBe null
+        store.observe(manga).first() shouldBe null
+        store.isEmpty() shouldBe true
+    }
+
+    @Test
     fun `app settings backup carries links through protobuf serialization`() {
         val preferences = preferences()
         CoverLinkStore(preferences).set(manga, link)

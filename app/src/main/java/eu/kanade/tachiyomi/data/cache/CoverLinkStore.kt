@@ -17,7 +17,9 @@ data class CoverLink(
     val url: String,
     val title: String,
     val sourceName: String,
-)
+) {
+    val identity: CoverLinkIdentity get() = CoverLinkIdentity(sourceId, url)
+}
 
 @Serializable
 data class CoverLinkIdentity(val sourceId: Long, val url: String)
@@ -35,7 +37,7 @@ class CoverLinkStore(preferenceStore: PreferenceStore) {
     private val mutableUsage = MutableStateFlow<Map<CoverLinkIdentity, Boolean>>(emptyMap())
     val usage = mutableUsage.asStateFlow()
 
-    fun isEmpty(): Boolean = preference.get().isEmpty()
+    fun isEmpty(): Boolean = bindings().isEmpty()
 
     fun get(manga: Manga): CoverLink? = bindings()[manga.coverLinkIdentity()]
 
@@ -46,8 +48,9 @@ class CoverLinkStore(preferenceStore: PreferenceStore) {
     @Synchronized
     fun set(manga: Manga, cover: CoverLink?) {
         val identity = manga.coverLinkIdentity()
+        val linkedCover = cover?.takeUnless { it.identity == identity }
         val bindings = bindings().toMutableMap().apply {
-            if (cover == null) remove(identity) else put(identity, cover)
+            if (linkedCover == null) remove(identity) else put(identity, linkedCover)
         }
         preference.set(
             bindings.map { (manga, cover) -> json.encodeToString(CoverLinkBinding(manga, cover)) }
@@ -67,7 +70,8 @@ class CoverLinkStore(preferenceStore: PreferenceStore) {
         if (snapshot.encoded != values) {
             val links = values.mapNotNull {
                 runCatching { json.decodeFromString<CoverLinkBinding>(it) }.getOrNull()
-            }.associate { it.manga to it.cover }
+            }.filterNot { it.manga == it.cover.identity }
+                .associate { it.manga to it.cover }
             snapshot = Snapshot(values, links)
         }
         return snapshot.links

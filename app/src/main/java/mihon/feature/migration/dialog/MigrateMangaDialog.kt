@@ -33,6 +33,7 @@ import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.cache.CoverLinkStore
+import eu.kanade.tachiyomi.data.cache.coverLinkIdentity
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import kotlinx.coroutines.flow.update
 import mihon.core.viewmodel.StateViewModel
@@ -145,6 +146,13 @@ internal fun Screen.MigrateMangaDialog(
                         )
                     }
                 }
+                if (state.coverMatchesDestination) {
+                    Text(
+                        text = stringResource(MR.strings.migration_cover_matches_destination),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         },
         confirmButton = {
@@ -163,6 +171,7 @@ internal fun Screen.MigrateMangaDialog(
                 Spacer(modifier = Modifier.weight(1f))
 
                 TextButton(
+                    enabled = state.canMigrate,
                     onClick = {
                         scope.launchIO {
                             viewModel.migrateManga(replace = false)
@@ -173,6 +182,7 @@ internal fun Screen.MigrateMangaDialog(
                     Text(text = stringResource(MR.strings.copy))
                 }
                 TextButton(
+                    enabled = state.canMigrate,
                     onClick = {
                         scope.launchIO {
                             viewModel.migrateManga(replace = true)
@@ -196,6 +206,8 @@ class MigrateDialogViewModel(
 ) : StateViewModel<MigrateDialogViewModel.State>(State()) {
 
     fun init(current: Manga, target: Manga) {
+        val currentCoverLink = coverLinkStore.get(current)
+        val coverMatchesDestination = currentCoverLink?.identity == target.coverLinkIdentity()
         val applicableFlags = buildList {
             MigrationFlag.entries.forEach {
                 val applicable = when (it) {
@@ -207,26 +219,34 @@ class MigrateDialogViewModel(
                             current.customGenre != null || current.customStatus != null
                     MigrationFlag.NOTES -> current.notes.isNotBlank()
                     MigrationFlag.REMOVE_DOWNLOAD -> downloadManager.getDownloadCount(current) > 0
-                    MigrationFlag.COVER -> true
+                    MigrationFlag.COVER -> !coverMatchesDestination
                 }
                 if (applicable) add(it)
             }
         }
-        val selectedFlags = sourcePreference.migrationFlags.get()
+        val selectedFlags = sourcePreference.migrationFlags.get().let {
+            if (currentCoverLink != null && !coverMatchesDestination) {
+                it + MigrationFlag.COVER
+            } else {
+                it - MigrationFlag.COVER
+            }
+        }
         mutableState.update {
             State(
                 current = current,
                 target = target,
                 applicableFlags = applicableFlags,
                 selectedFlags = selectedFlags,
-                hasCoverLink = coverLinkStore.get(current) != null,
+                hasCoverLink = currentCoverLink != null,
                 hasCustomCover = current.hasCustomCover(coverCache),
+                coverMatchesDestination = coverMatchesDestination,
             )
         }
     }
 
     fun toggleSelection(flag: MigrationFlag) {
         mutableState.update {
+            if (flag !in it.applicableFlags) return@update it
             val selectedFlags = it.selectedFlags.toMutableSet()
                 .apply { if (contains(flag)) remove(flag) else add(flag) }
                 .toSet()
@@ -238,6 +258,7 @@ class MigrateDialogViewModel(
         val state = state.value
         val current = state.current ?: return
         val target = state.target ?: return
+        if (!state.canMigrate) return
         sourcePreference.migrationFlags.set(state.selectedFlags)
         mutableState.update { it.copy(isMigrating = true) }
         migrateManga(current, target, replace)
@@ -251,7 +272,12 @@ class MigrateDialogViewModel(
         val selectedFlags: Set<MigrationFlag> = emptySet(),
         val hasCoverLink: Boolean = false,
         val hasCustomCover: Boolean = false,
+        val coverMatchesDestination: Boolean = false,
         val isMigrating: Boolean = false,
         val isMigrated: Boolean = false,
-    )
+    ) {
+        val canMigrate: Boolean
+            get() = current != null && target != null && current.id != target.id &&
+                current.coverLinkIdentity() != target.coverLinkIdentity()
+    }
 }

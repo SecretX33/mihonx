@@ -6,6 +6,7 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.cache.CoverLink
 import eu.kanade.tachiyomi.data.cache.CoverLinkStore
+import eu.kanade.tachiyomi.data.cache.coverLinkIdentity
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -51,7 +52,7 @@ class MigrateMangaUseCase(
     private val enhancedServices by lazy { trackerManager.trackers.filterIsInstance<EnhancedTracker>() }
 
     suspend operator fun invoke(current: Manga, target: Manga, replace: Boolean) {
-        if (current.id == target.id) return
+        if (current.id == target.id || current.coverLinkIdentity() == target.coverLinkIdentity()) return
         val targetSource = sourceManager.get(target.source) ?: return
         val currentSource = sourceManager.get(current.source)
         val flags = sourcePreferences.migrationFlags.get()
@@ -141,7 +142,7 @@ class MigrateMangaUseCase(
                     title = current.effectiveTitle,
                     sourceName = (currentSource ?: sourceManager.getOrStub(current.source)).name,
                 )
-            }?.takeUnless { it.sourceId == target.source && it.url == target.url }
+            }?.takeUnless { it.identity == target.coverLinkIdentity() }
 
             val now = Clock.System.now().toEpochMilliseconds()
 

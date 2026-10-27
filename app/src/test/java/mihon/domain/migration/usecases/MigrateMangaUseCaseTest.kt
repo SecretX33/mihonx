@@ -376,6 +376,26 @@ class MigrateMangaUseCaseTest {
         coVerify(exactly = 0) { updateMangaFromRemote(current, fetchChapters = true) }
     }
 
+    @Test
+    fun `another entry on the linked source retains the original cover link`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        val link = CoverLink(target.source, "/other-entry", "Cover", "Cover source")
+        every { coverLinkStore.get(current) } returns link
+
+        useCase(current, target, replace = true)
+
+        verify { coverLinkStore.set(target, link) }
+    }
+
+    @Test
+    fun `same entry identity with a different database ID does not migrate`() = runBlocking<Unit> {
+        useCase(current, current.copy(id = 99), replace = true)
+
+        verify(exactly = 0) { coverLinkStore.set(any(), any()) }
+        coVerify(exactly = 0) { updateMangaFromRemote(any<Manga>(), fetchChapters = true) }
+        coVerify(exactly = 0) { updateManga.awaitAll(any()) }
+    }
+
     private fun selectFlags(vararg flags: MigrationFlag) {
         every { sourcePreferences.migrationFlags.get() } returns flags.toSet()
     }
