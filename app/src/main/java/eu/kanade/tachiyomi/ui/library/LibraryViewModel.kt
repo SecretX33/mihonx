@@ -558,10 +558,11 @@ class LibraryViewModel(
         viewModelScope.launchNonCancellable {
             if (deleteFromLibrary) {
                 val toDelete = mangas.map {
-                    it.removeCovers(coverCache)
+                    val manga = it.removeCovers(coverCache)
                     MangaUpdate(
                         favorite = false,
-                        id = it.id,
+                        id = manga.id,
+                        coverLastModified = manga.coverLastModified,
                         customInfo = CustomMangaInfo.ClearAll,
                     )
                 }

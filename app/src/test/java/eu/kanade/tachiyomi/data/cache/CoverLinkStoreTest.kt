@@ -3,9 +3,12 @@ package eu.kanade.tachiyomi.data.cache
 import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
 import eu.kanade.tachiyomi.data.backup.models.Backup
 import eu.kanade.tachiyomi.data.backup.models.StringSetPreferenceValue
+import eu.kanade.tachiyomi.util.removeCovers
+import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.Test
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.source.local.LocalSource
 
 class CoverLinkStoreTest {
 
@@ -87,6 +91,47 @@ class CoverLinkStoreTest {
         store.get(manga) shouldBe null
         store.observe(manga).first() shouldBe null
         store.isEmpty() shouldBe true
+    }
+
+    @Test
+    fun `library removal clears the link and refreshes the cover without a cached image`() {
+        val store = CoverLinkStore(preferences())
+        val other = manga.copy(url = "/other")
+        store.set(manga, link)
+        store.set(other, link)
+        val cache = mockk<CoverCache> { every { deleteFromCache(manga, true) } returns 0 }
+
+        val updated = manga.removeCovers(cache, store)
+
+        store.get(manga) shouldBe null
+        store.get(other) shouldBe link
+        updated.coverLastModified shouldBeGreaterThan manga.coverLastModified
+    }
+
+    @Test
+    fun `library removal clears local entry links without deleting local cover files`() {
+        val store = CoverLinkStore(preferences())
+        val localManga = manga.copy(source = LocalSource.ID)
+        store.set(localManga, link)
+        val cache = mockk<CoverCache>()
+
+        val updated = localManga.removeCovers(cache, store)
+
+        store.get(localManga) shouldBe null
+        updated.coverLastModified shouldBeGreaterThan localManga.coverLastModified
+        verify(exactly = 0) { cache.deleteFromCache(any(), any()) }
+    }
+
+    @Test
+    fun `removing an entry does not clear links that use it for their cover`() {
+        val store = CoverLinkStore(preferences())
+        val coverEntry = manga.copy(source = link.sourceId, url = link.url)
+        store.set(manga, link)
+        val cache = mockk<CoverCache> { every { deleteFromCache(coverEntry, true) } returns 0 }
+
+        coverEntry.removeCovers(cache, store)
+
+        store.get(manga) shouldBe link
     }
 
     @Test
