@@ -4,15 +4,19 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddLink
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.DropdownMenuItem
@@ -23,6 +27,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -47,6 +53,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.manga.EditCoverAction
+import eu.kanade.tachiyomi.data.cache.CoverLink
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
@@ -62,6 +69,10 @@ fun MangaCoverDialog(
     onShareClick: () -> Unit,
     onSaveClick: () -> Unit,
     onEditClick: ((EditCoverAction) -> Unit)?,
+    coverLink: CoverLink?,
+    usingLinkedCover: Boolean?,
+    onChooseCoverSource: (() -> Unit)?,
+    onRemoveCoverLink: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     Dialog(
@@ -98,6 +109,13 @@ fun MangaCoverDialog(
                                     icon = Icons.Outlined.Share,
                                     onClick = onShareClick,
                                 ),
+                            ),
+                        )
+                        if (onChooseCoverSource != null) {
+                            CoverSourceButton(coverLink, usingLinkedCover, onChooseCoverSource, onRemoveCoverLink)
+                        }
+                        AppBarActions(
+                            actions = listOf(
                                 AppBar.Action(
                                     title = stringResource(MR.strings.action_save),
                                     icon = Icons.Outlined.Save,
@@ -150,6 +168,24 @@ fun MangaCoverDialog(
         ) { contentPadding ->
             val statusBarPaddingPx = with(LocalDensity.current) { contentPadding.calculateTopPadding().roundToPx() }
             val bottomPaddingPx = with(LocalDensity.current) { contentPadding.calculateBottomPadding().roundToPx() }
+            var imageView by remember { mutableStateOf<ReaderPageImageView?>(null) }
+
+            LaunchedEffect(manga, imageView) {
+                val view = imageView ?: return@LaunchedEffect
+                val request = ImageRequest.Builder(view.context)
+                    .data(manga)
+                    .size(Size.ORIGINAL)
+                    .memoryCachePolicy(CachePolicy.DISABLED)
+                    .build()
+                val image = view.context.imageLoader.execute(request).image ?: return@LaunchedEffect
+                val drawable = image.asDrawable(view.context.resources)
+                val copy = (drawable as? BitmapDrawable)
+                    ?.bitmap
+                    ?.copy(Bitmap.Config.HARDWARE, false)
+                    ?.toDrawable(view.context.resources)
+                    ?: drawable
+                view.setImage(copy, ReaderPageImageView.Config(zoomDuration = 500))
+            }
 
             Box(
                 modifier = Modifier
@@ -162,32 +198,68 @@ fun MangaCoverDialog(
                             onViewClicked = onDismissRequest
                             clipToPadding = false
                             clipChildren = false
+                            imageView = this
                         }
                     },
                     update = { view ->
-                        val request = ImageRequest.Builder(view.context)
-                            .data(manga)
-                            .size(Size.ORIGINAL)
-                            .memoryCachePolicy(CachePolicy.DISABLED)
-                            .target { image ->
-                                val drawable = image.asDrawable(view.context.resources)
-                                // Copy bitmap in case it came from memory cache
-                                // Because SSIV needs to thoroughly read the image
-                                val copy = (drawable as? BitmapDrawable)
-                                    ?.bitmap
-                                    ?.copy(Bitmap.Config.HARDWARE, false)
-                                    ?.toDrawable(view.context.resources)
-                                    ?: drawable
-                                view.setImage(copy, ReaderPageImageView.Config(zoomDuration = 500))
-                            }
-                            .build()
-                        view.context.imageLoader.enqueue(request)
-
                         view.updatePadding(top = statusBarPaddingPx, bottom = bottomPaddingPx)
                     },
+                    onRelease = { it.recycle() },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CoverSourceButton(
+    link: CoverLink?,
+    usingLinkedCover: Boolean?,
+    onChoose: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    Box {
+        var expanded by remember { mutableStateOf(false) }
+        IconButton(onClick = { if (link == null) onChoose() else expanded = true }) {
+            Icon(
+                imageVector = if (link == null) Icons.Outlined.AddLink else Icons.Outlined.Link,
+                contentDescription = stringResource(
+                    if (link == null) MR.strings.cover_link_choose else MR.strings.cover_link_manage,
+                ),
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (link != null) {
+                Column(Modifier.widthIn(max = 280.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(link.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(link.sourceName, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        stringResource(
+                            when (usingLinkedCover) {
+                                true -> MR.strings.cover_link_displaying
+                                false -> MR.strings.cover_link_fallback
+                                null -> MR.strings.cover_link_selected
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(MR.strings.cover_link_change)) },
+                onClick = {
+                    expanded = false
+                    onChoose()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(MR.strings.cover_link_remove)) },
+                onClick = {
+                    expanded = false
+                    onRemove()
+                },
+            )
         }
     }
 }

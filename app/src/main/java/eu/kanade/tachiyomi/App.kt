@@ -30,6 +30,7 @@ import eu.kanade.tachiyomi.core.security.PrivacyPreferences
 import eu.kanade.tachiyomi.crash.CrashActivity
 import eu.kanade.tachiyomi.crash.GlobalExceptionHandler
 import eu.kanade.tachiyomi.data.coil.BufferedSourceFetcher
+import eu.kanade.tachiyomi.data.coil.LinkedCoverInterceptor
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverKeyer
 import eu.kanade.tachiyomi.data.coil.MangaKeyer
@@ -189,6 +190,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         return ImageLoader.Builder(this).apply {
             val callFactoryLazy = lazy { Injekt.get<NetworkHelper>().client }
             components {
+                add(LinkedCoverInterceptor(Injekt.get(), Injekt.get(), Injekt.get()))
                 // NetworkFetcher.Factory
                 add(OkHttpNetworkFetcherFactory(callFactoryLazy::value))
                 // Decoder.Factory

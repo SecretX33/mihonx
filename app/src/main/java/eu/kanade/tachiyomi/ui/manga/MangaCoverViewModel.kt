@@ -13,12 +13,19 @@ import coil3.request.ImageRequest
 import coil3.size.Size
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
+import eu.kanade.tachiyomi.data.cache.coverLinkIdentity
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.saver.Location
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toShareIntent
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
@@ -40,9 +47,31 @@ class MangaCoverViewModel(
     private val imageSaver: ImageSaver = Injekt.get(),
     private val coverCache: CoverCache = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
+    private val coverLinkStore: CoverLinkStore = Injekt.get(),
 
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateViewModel<Manga?>(null) {
+
+    val coverLink = state.filterNotNull()
+        .flatMapLatest(coverLinkStore::observe)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val usingLinkedCover = combine(state, coverLinkStore.usage) { manga, usage ->
+        manga?.let { usage[it.coverLinkIdentity()] }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun removeCoverLink(context: Context) {
+        val manga = state.value ?: return
+        viewModelScope.launchIO {
+            try {
+                coverLinkStore.set(manga, null)
+                updateManga.awaitUpdateCoverLastModified(manga.id)
+                notifyCoverUpdated(context)
+            } catch (e: Exception) {
+                notifyFailedCoverUpdate(context, e)
+            }
+        }
+    }
 
     companion object {
         val MANGA_ID_KEY = CreationExtras.Key<Long>()

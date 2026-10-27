@@ -1098,4 +1098,13 @@
     <string name="filler_pages_add_scanlator">Add scanlator</string>
     <string name="filler_pages_none_configured">No scanlators added yet</string>
     <string name="unknown_scanlator">Unknown scanlator</string>
+    <string name="cover_link_choose">Choose cover from another source</string>
+    <string name="cover_link_manage">Manage linked cover source</string>
+    <string name="cover_link_use">Use this entry\'s cover</string>
+    <string name="cover_link_change">Change cover source</string>
+    <string name="cover_link_remove">Remove cover link</string>
+    <string name="cover_link_displaying">Displaying linked cover</string>
+    <string name="cover_link_fallback">Using existing cover as fallback</string>
+    <string name="cover_link_selected">Linked cover selected</string>
+    <string name="cover_link_unavailable">The linked cover is unavailable. The existing cover will be used until it becomes available.</string>
 </resources>
