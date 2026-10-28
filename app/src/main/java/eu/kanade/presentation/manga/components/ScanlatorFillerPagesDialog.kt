@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,6 +32,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Add
+import mihon.icons.materialsymbols.rounded.Close
+import mihon.icons.materialsymbols.rounded.Remove
 import tachiyomi.domain.manga.model.ScanlatorFillerPages
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -77,7 +77,7 @@ fun ScanlatorFillerPagesDialog(
             ) {
                 Box {
                     OutlinedButton(onClick = { addExpanded = true }, enabled = remaining.isNotEmpty()) {
-                        Icon(imageVector = Icons.Outlined.Add, contentDescription = null)
+                        Icon(imageVector = MaterialSymbols.Rounded.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(MR.strings.filler_pages_add_scanlator))
                     }
@@ -118,7 +118,7 @@ fun ScanlatorFillerPagesDialog(
                                     )
                                     IconButton(onClick = { drafts.remove(scanlator) }) {
                                         Icon(
-                                            imageVector = Icons.Outlined.Close,
+                                            imageVector = MaterialSymbols.Rounded.Close,
                                             contentDescription = stringResource(MR.strings.action_remove),
                                         )
                                     }
@@ -171,7 +171,10 @@ private fun FillerPageCountField(value: String, label: String, onValueChange: (S
         IconButton(onClick = {
             count?.let { onValueChange((it - 1).toString()) }
         }, enabled = count != null && count > 0) {
-            Icon(Icons.Outlined.Remove, contentDescription = stringResource(MR.strings.filler_pages_decrease, label))
+            Icon(
+                MaterialSymbols.Rounded.Remove,
+                contentDescription = stringResource(MR.strings.filler_pages_decrease, label),
+            )
         }
         OutlinedTextField(
             value = value,
@@ -185,7 +188,10 @@ private fun FillerPageCountField(value: String, label: String, onValueChange: (S
             onClick = { count?.let { onValueChange((it + 1).toString()) } },
             enabled = canIncrease,
         ) {
-            Icon(Icons.Outlined.Add, contentDescription = stringResource(MR.strings.filler_pages_increase, label))
+            Icon(
+                MaterialSymbols.Rounded.Add,
+                contentDescription = stringResource(MR.strings.filler_pages_increase, label),
+            )
         }
     }
 }

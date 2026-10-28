@@ -3,24 +3,23 @@ package tachiyomi.domain.chapter.model
 import kotlinx.serialization.json.JsonObject
 import mihon.core.common.extensions.EMPTY
 import kotlin.math.floor
+import kotlin.time.Instant
 
 data class Chapter(
     val id: Long,
     val mangaId: Long,
     val read: Boolean,
     val bookmark: Boolean,
-    val lastPageRead: Long,
-    val dateFetch: Long,
+    val lastPageRead: Int,
+    val dateFetch: Instant,
     val sourceOrder: Long,
     val url: String,
     val name: String,
-    val dateUpload: Long,
+    val dateUpload: Instant?,
     val chapterNumber: Double,
     val scanlator: String?,
-    val lastModifiedAt: Long,
-    val version: Long,
-    val excluded: Boolean,
     val memo: JsonObject,
+    val excluded: Boolean = false,
 ) {
     val isRecognizedNumber: Boolean
         get() = chapterNumber >= 0f
@@ -45,16 +44,13 @@ data class Chapter(
             read = false,
             bookmark = false,
             lastPageRead = 0,
-            dateFetch = 0,
+            dateFetch = Instant.fromEpochMilliseconds(0),
             sourceOrder = 0,
             url = "",
             name = "",
-            dateUpload = -1,
+            dateUpload = null,
             chapterNumber = -1.0,
             scanlator = null,
-            lastModifiedAt = 0,
-            version = 1,
-            excluded = false,
             memo = JsonObject.EMPTY,
         )
     }
