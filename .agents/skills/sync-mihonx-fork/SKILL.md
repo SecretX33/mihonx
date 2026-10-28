@@ -5,7 +5,7 @@ description: Sync MihonX with an official Mihon release while preserving fork be
 
 # Sync MihonX Fork
 
-Roll the fork forward to an official release from `mihonapp/mihon`. Keep the process lean and preserve upstream history. Follow the requested scope: planning a sync does not authorize performing it or opening a pull request.
+Roll the fork forward to an official release from `mihonapp/mihon`. Keep the process lean and preserve upstream history. A bare invocation means find the latest stable upstream release and carry out the sync on a dedicated branch. Explicit user instructions override the default target, starting point, or scope; a planning-only request remains planning-only.
 
 ## Establish the baseline
 
@@ -14,6 +14,8 @@ Read the repository's `AGENTS.md` and `CHANGELOG_MIHONX.md`. Refresh the fork's 
 Use the upstream release number and full commit hash recorded in the fork changelog as the previous baseline. Verify the release-to-commit mapping and its ancestry in the fork. Investigate missing history or a previous squash before treating an ancestry failure as an incorrect baseline; do not silently substitute a different baseline.
 
 Resolve the requested official upstream release, or the latest stable release when unspecified, to its exact commit. Fetch upstream tags into a separate namespace such as `refs/upstream-tags/*` to avoid collisions with MihonX release tags. Integrate the pinned release commit. Exclude unreleased upstream branch commits and changes from other forks. Leave the disabled weekly sync workflow outside this task's scope.
+
+Before creating a branch or changing files, inspect the current branch and the selected starting branch for an already completed sync to the target. Check the recorded upstream baseline and commit ancestry, not equality with the fork's `HEAD`, since fork commits remain on top. If either branch already includes a completed sync to the target or a newer upstream release, report that it is up to date and stop without creating a branch, commit, or pull request. A matching sync branch with unfinished work should be resumed instead.
 
 ## Capture and integrate
 
@@ -29,7 +31,7 @@ Use direct comparisons between commit contents, equivalent to an IDE's branch co
 
 Use `git diff --find-renames OLD_COMMIT NEW_COMMIT` for these comparisons. Inspect the full diff and surrounding code, including additions, deletions, and binary assets. Commit logs and the changelog provide context; the file comparisons establish the actual changes.
 
-Create a branch such as `chore/sync-mihon-v<VERSION>` from the starting fork commit and merge the pinned upstream release into it. Preserve original upstream commits without squashing, cherry-picking, or rebasing them. If the default branch advances during review, merge it into the update branch and revalidate.
+Use `chore/sync-mihon-v<VERSION>` unless the user specifies another branch. Reuse the current branch if it is the matching sync branch; otherwise check for an existing matching local or remote branch and resume it. Create the branch from the starting fork commit only when it does not exist. Verify an existing branch targets the same release before using it, and preserve any in-progress work. Merge the pinned upstream release into the sync branch unless it is already an ancestor. Preserve original upstream commits without squashing, cherry-picking, or rebasing them. If the default branch advances during review, merge it into the update branch and revalidate.
 
 Resolve conflicts according to behavior and upstream's current structure. Use the saved snapshot as a reference for adapting customizations. Account for each existing fork feature, including code that merged cleanly. Remove redundant fork implementations when upstream provides equivalent behavior.
 
