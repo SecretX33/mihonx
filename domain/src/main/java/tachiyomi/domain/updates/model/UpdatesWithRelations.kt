@@ -2,6 +2,7 @@ package tachiyomi.domain.updates.model
 
 import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.domain.manga.model.ScanlatorFillerPages
+import kotlin.time.Instant
 
 data class UpdatesWithRelations(
     val mangaId: Long,
@@ -12,9 +13,9 @@ data class UpdatesWithRelations(
     val chapterUrl: String,
     val read: Boolean,
     val bookmark: Boolean,
-    val lastPageRead: Long,
+    val lastPageRead: Int,
     val sourceId: Long,
-    val dateFetch: Long,
+    val dateFetch: Instant,
     val coverData: MangaCover,
     val scanlatorFillerPages: Map<String, ScanlatorFillerPages>,
 )

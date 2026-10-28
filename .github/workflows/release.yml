@@ -102,7 +102,7 @@ jobs:
 
   get_tag:
     name: Extract tag name
-    runs-on: 'ubuntu-24.04'
+    runs-on: 'ubuntu-26.04'
     needs: [prepare]
     # Allow this job to run even when 'prepare' is skipped (tag push event)
     if: |
@@ -124,7 +124,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: 'ubuntu-24.04'
+    runs-on: 'ubuntu-26.04'
     needs: get_tag
     if: |
       always() &&
@@ -138,13 +138,20 @@ jobs:
           ref: ${{ needs.get_tag.outputs.tag }}
 
       - name: Set up JDK
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version-file: .github/.java-version
           distribution: temurin
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Decode signing keystore
+        run: echo "$SIGNING_KEY" | base64 -d > "${{ runner.temp }}/antsy.keystore"
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
 
       - name: Set version from tag
         run: |
@@ -154,9 +161,9 @@ jobs:
           sed -i "s/versionName = \".*\"/versionName = \"$VERSION\"/" app/build.gradle.kts
 
       - name: Build
-        run: ./gradlew assembleRelease -Pinclude-telemetry -Penable-updater
+        run: ./gradlew assembleRelease -Pdist=github
         env:
-          storeFileBase64: ${{ secrets.SIGNING_KEY }}
+          storeFile: ${{ runner.temp }}/antsy.keystore
           storePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias: ${{ secrets.ALIAS }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
@@ -172,7 +179,7 @@ jobs:
           mv app/build/outputs/apk/release/app-x86_64-release.apk mihonx-x86_64-${{ needs.get_tag.outputs.tag }}.apk
 
       - name: Upload APK
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mihonx
           path: |
@@ -184,7 +191,7 @@ jobs:
 
   build_foss:
     name: Build (FOSS)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: get_tag
     if: |
       always() &&
@@ -198,15 +205,20 @@ jobs:
           ref: ${{ needs.get_tag.outputs.tag }}
 
       - name: Set up JDK
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version-file: .github/.java-version
           distribution: temurin
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-disabled: true
+
+      - name: Decode signing keystore
+        run: echo "$SIGNING_KEY" | base64 -d > "${{ runner.temp }}/antsy.keystore"
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
 
       - name: Set version from tag
         run: |
@@ -216,9 +228,9 @@ jobs:
           sed -i "s/versionName = \".*\"/versionName = \"$VERSION\"/" app/build.gradle.kts
 
       - name: Build
-        run: ./gradlew assembleFoss -Penable-updater
+        run: ./gradlew assembleFoss -Pdist=foss
         env:
-          storeFileBase64: ${{ secrets.SIGNING_KEY }}
+          storeFile: ${{ runner.temp }}/antsy.keystore
           storePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias: ${{ secrets.ALIAS }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
@@ -230,14 +242,14 @@ jobs:
           mv app/build/outputs/apk/foss/app-universal-foss.apk mihonx-${{ needs.get_tag.outputs.tag }}-foss.apk
 
       - name: Upload APK
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mihonx-foss
           path: mihonx-${{ needs.get_tag.outputs.tag }}-foss.apk
 
   release:
     name: Create GitHub Release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [get_tag, build, build_foss]
     if: |
       always() &&
@@ -248,7 +260,7 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           merge-multiple: true
 
@@ -261,7 +273,7 @@ jobs:
             mihonx-foss
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.get_tag.outputs.tag }}
           name: MihonX ${{ needs.get_tag.outputs.tag }}
