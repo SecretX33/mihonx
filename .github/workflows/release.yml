@@ -18,8 +18,8 @@ env:
   MIHON_GITHUB_RELEASE: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -45,38 +45,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ inputs.commitHash || 'main' }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           fetch-tags: true
 
       - name: Resolve tag and commit
         id: resolve
-        run: |
-          set -e
-
-          COMMIT=$(git rev-parse HEAD)
-          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
-
-          INPUT_TAG="${{ inputs.tag }}"
-
-          if [[ -n "$INPUT_TAG" ]]; then
-            TAG="$INPUT_TAG"
-          else
-            # Get the latest MihonX tag from the main lineage, then bump its patch version
-            LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0 --first-parent 2>/dev/null || true)
-            if [[ -z "$LATEST_TAG" ]]; then
-              TAG="v0.0.1"
-            else
-              # Strip leading 'v', split by '.', bump patch
-              VERSION="${LATEST_TAG#v}"
-              IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-              PATCH=$((PATCH + 1))
-              TAG="v${MAJOR}.${MINOR}.${PATCH}"
-            fi
-          fi
-
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Resolved tag: $TAG for commit: $COMMIT"
+        run: python3 .github/scripts/resolve_release.py
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_COMMIT: ${{ inputs.commitHash }}
 
       - name: Create and push tag
         run: |
@@ -115,12 +93,14 @@ jobs:
     steps:
       - name: Get tag name
         id: extract
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag || github.ref_name }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "tag=${{ needs.prepare.outputs.tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Release tags must use vMAJOR.MINOR.PATCH without leading zeroes."
+            exit 1
           fi
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build
@@ -136,6 +116,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.get_tag.outputs.tag }}
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -203,6 +184,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.get_tag.outputs.tag }}
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -264,14 +246,6 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Delete all artifacts
-        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
-        with:
-          failOnError: false
-          name: |
-            mihonx
-            mihonx-foss
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
@@ -301,3 +275,11 @@ jobs:
           draft: false
           prerelease: false
           token: ${{ secrets.MIHON_BOT_TOKEN }}
+
+      - name: Delete all artifacts
+        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
+        with:
+          failOnError: false
+          name: |
+            mihonx
+            mihonx-foss

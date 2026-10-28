@@ -28,6 +28,7 @@ Backups are portable in both directions. Mihon `v0.21.3` backups restore in Miho
 - Keep MihonX's version sequence independent from upstream release tags.
 - Disable telemetry and Firebase integration in MihonX builds.
 - Support manual releases, pipeline-managed versions, MihonX APK names, and isolated upstream tags.
+- Bump releases from the highest fork version on the main lineage, including multiple tags on one commit. Preserve failed test reports and release artifacts until publication succeeds.
 - Check weekly whether the fork can fast-forward from upstream without rewriting MihonX history.
 - Preserve MihonX custom data through the Mihon `v0.21.3` database upgrades.
 
