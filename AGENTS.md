@@ -5,6 +5,6 @@ MihonX is a light fork of Mihon. Keep the fork focused on small, compatible enha
 # Project Working Agreements
 
 - Keep changes as close to upstream as practical so upstream commits can be merged into `main` with minimal conflict or fork-specific adaptation.
-- Avoid fork-only database schema migrations and version increments when a compatible runtime or query-level solution is practical. Keep database migration numbering aligned with upstream.
+- Minimize database code differences from upstream. Preserve fork fields through straightforward schema changes; use query adaptations when simple, and avoid complex runtime workarounds. Keep upstream migration numbering where compatible with the fork's existing migration history.
 - Preserve bidirectional backup compatibility. Backups created by upstream must remain importable in this fork, and backups created by this fork must remain importable upstream.
 - Keep `CHANGELOG_MIHONX.md` reasonably current with concise, user-visible, fork-specific changes. Keep it lean and do not duplicate upstream release notes.

@@ -5,23 +5,23 @@ description: Sync MihonX with an official Mihon release while preserving fork be
 
 # Sync MihonX Fork
 
-Roll the fork forward to an official release from `mihonapp/mihon`. Keep the process lean and preserve upstream history. A bare invocation means find the latest stable upstream release and carry out the sync on a dedicated branch. Explicit user instructions override the default target, starting point, or scope; a planning-only request remains planning-only.
+Sync to an official `mihonapp/mihon` release while preserving upstream history. Keep the process lean. A bare invocation syncs the latest stable release on a dedicated branch. User instructions override the target, starting point, or scope; planning-only requests remain planning-only.
 
 ## Establish the baseline
 
-Read the repository's `AGENTS.md` and `CHANGELOG_MIHONX.md`. Refresh the fork's remote default branch, preferring `origin/main`, then `origin/master`, then `origin/HEAD`. Use that branch as the starting point unless the user specifies otherwise; keep unrelated feature work separate.
+Read `AGENTS.md` and `CHANGELOG_MIHONX.md`. Refresh the remote default branch, preferring `origin/main`, then `origin/master`, then `origin/HEAD`. Start there unless instructed otherwise; keep unrelated feature work separate.
 
-Use the upstream release number and full commit hash recorded in the fork changelog as the previous baseline. Verify the release-to-commit mapping and its ancestry in the fork. Investigate missing history or a previous squash before treating an ancestry failure as an incorrect baseline; do not silently substitute a different baseline.
+Use the changelog's upstream release and full commit hash as the previous baseline. Verify the release-to-commit mapping and fork ancestry. Investigate missing history or a prior squash before declaring the baseline incorrect; never silently substitute another.
 
-Resolve the requested official upstream release, or the latest stable release when unspecified, to its exact commit. Fetch upstream tags into a separate namespace such as `refs/upstream-tags/*` to avoid collisions with MihonX release tags. Integrate the pinned release commit. Exclude unreleased upstream branch commits and changes from other forks. Leave the disabled weekly sync workflow outside this task's scope.
+Resolve the target release to its exact commit. Fetch upstream tags into a separate namespace such as `refs/upstream-tags/*` to avoid MihonX tag collisions. Exclude unreleased upstream branch commits and other forks' changes. Leave the disabled weekly sync workflow outside scope.
 
-Before creating a branch or changing files, inspect the current branch and the selected starting branch for an already completed sync to the target. Check the recorded upstream baseline and commit ancestry, not equality with the fork's `HEAD`, since fork commits remain on top. If either branch already includes a completed sync to the target or a newer upstream release, report that it is up to date and stop without creating a branch, commit, or pull request. A matching sync branch with unfinished work should be resumed instead.
+Before creating a branch or changing files, check the current and starting branches for a completed sync to the target or newer release. Use the recorded baseline and commit ancestry, not equality with fork `HEAD`, since fork commits remain on top. If either branch is up to date, report that and stop without creating a branch, commit, or pull request. Resume unfinished matching sync work instead.
 
 ## Capture and integrate
 
-Record the starting fork commit and save the complete diff from the previous upstream baseline to that commit outside the tracked working tree. Include binary changes and full object IDs when saving the patch. This snapshot captures the fork's accumulated customizations regardless of intervening commits or merges.
+Record the starting fork commit and save its complete diff from the previous upstream baseline outside the tracked working tree, including binary changes and full object IDs. This captures accumulated customizations across intervening commits and merges.
 
-Use direct comparisons between commit contents, equivalent to an IDE's branch comparison:
+Compare commit contents directly with `git diff --find-renames OLD_COMMIT NEW_COMMIT`:
 
 | Comparison | Purpose |
 |---|---|
@@ -29,19 +29,29 @@ Use direct comparisons between commit contents, equivalent to an IDE's branch co
 | Previous upstream baseline to target upstream release | Understand upstream changes |
 | Target upstream release to completed update branch | Review the resulting fork customizations |
 
-Use `git diff --find-renames OLD_COMMIT NEW_COMMIT` for these comparisons. Inspect the full diff and surrounding code, including additions, deletions, and binary assets. Commit logs and the changelog provide context; the file comparisons establish the actual changes.
+Inspect full diffs and surrounding code, including additions, deletions, and binary assets. Logs and the changelog provide context; file comparisons establish the actual changes.
 
-Use `chore/sync-mihon-v<VERSION>` unless the user specifies another branch. Reuse the current branch if it is the matching sync branch; otherwise check for an existing matching local or remote branch and resume it. Create the branch from the starting fork commit only when it does not exist. Verify an existing branch targets the same release before using it, and preserve any in-progress work. Merge the pinned upstream release into the sync branch unless it is already an ancestor. Preserve original upstream commits without squashing, cherry-picking, or rebasing them. If the default branch advances during review, merge it into the update branch and revalidate.
+Use `sync/mihon-v<RELEASE>` unless instructed otherwise. Reuse the matching current branch or resume a matching local or remote branch after verifying its target release, preserving in-progress work. Create it from the starting fork commit only if none exists. Merge the pinned release unless already an ancestor; never squash, cherry-pick, or rebase upstream commits. If the default branch advances during review, merge it into the sync branch and repeat validation.
 
-Resolve conflicts according to behavior and upstream's current structure. Use the saved snapshot as a reference for adapting customizations. Account for each existing fork feature, including code that merged cleanly. Remove redundant fork implementations when upstream provides equivalent behavior.
+Resolve conflicts by behavior and upstream's current structure, using the saved snapshot to adapt customizations. Account for every fork feature, including cleanly merged code; remove redundant implementations when upstream provides equivalent behavior.
+
+## Handle database migrations
+
+Include schema definitions, `data/src/main/sqldelight/tachiyomi/migrations/`, and migration code in the comparisons. Preserve fork fields and storage behavior. Minimize upstream code differences for current and future syncs: accept simple query adaptations, but retain straightforward schema additions over complex runtime workarounds.
+
+Keep upstream migration numbers where possible. For overlaps, preserve the fork's lineage and consolidate pending upstream changes in dependency order above its highest migration number. Add a new migration so installed users execute them; editing already-executed files is insufficient. Combine overlaps with upstream changes at the first available number, retaining later numbers. With fork migrations 11 and 12, upstream 11 alone becomes 13; upstream 11 through 15 become combined 13 containing upstream 11 through 13, followed by 14 and 15.
+
+When upstream rebuilds a table containing fork fields, adapt the pending migration or rebuild code to retain those columns and copy their values before dropping the old table. Keep `INSERT ... SELECT` mappings and current schema definitions consistent. Defaults cannot recover discarded values; assess recovery separately if a destructive migration already shipped.
 
 ## Validate and finish
 
-Review the final delta against the target release. Preserve MihonX identity, release and update behavior, telemetry choices, and bidirectional backup compatibility. Keep database migration numbering aligned with upstream and avoid fork-only migrations when a compatible solution is practical.
+Review the final delta against the target release. Preserve MihonX identity, release and update behavior, and telemetry choices; keep database divergence minimal.
 
-Build and run relevant existing checks, focusing on affected fork behavior, database upgrades, and backup compatibility. Report any validation that could not be completed. Update the fork changelog baseline to the new upstream release and full commit hash, keeping its entries concise and fork-specific.
+Build and run relevant existing checks for affected fork behavior and bidirectional backup compatibility. Validate fresh installations and upgrades from the fork's highest schema version and affected earlier supported versions: matching final schemas and preserved non-default custom values, row identities, and relationships. Report checks that could not be completed.
 
-When writing a sync pull request description, invoke `$writing-pr-descriptions` and follow the repository template. Include the previous and target upstream release numbers and commit hashes, meaningful adaptations, and validation. Require GitHub's **Create a merge commit** option; squash merging and rebase merging do not preserve the imported upstream history as required here.
+Update the fork changelog baseline to the target release and full commit hash, keeping entries concise and fork-specific. In sync plans and pull requests, report previous and target release numbers and hashes, meaningful adaptations (including migration-number mappings and field preservation), and validation results or limitations.
+
+Title the sync pull request `Merge upstream v<RELEASE>`. For descriptions, invoke `$writing-pr-descriptions` and follow the repository template. Require GitHub's **Create a merge commit** option to preserve upstream hashes; squash and rebase merging are unsuitable.
 
 End the pull request description with this exact line, after all other content:
 
