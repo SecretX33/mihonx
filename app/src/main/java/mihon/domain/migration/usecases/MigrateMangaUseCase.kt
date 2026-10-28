@@ -5,6 +5,9 @@ import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLink
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
+import eu.kanade.tachiyomi.data.cache.coverLinkIdentity
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -50,13 +53,17 @@ class MigrateMangaUseCase(
     private val getHistory: GetHistory,
     private val upsertHistory: UpsertHistory,
     private val updateMangaFromRemote: UpdateMangaFromRemote,
+    private val coverLinkStore: CoverLinkStore,
 ) {
     private val enhancedServices by lazy { trackerManager.trackers.filterIsInstance<EnhancedTracker>() }
 
     suspend operator fun invoke(current: Manga, target: Manga, replace: Boolean) {
+        if (current.id == target.id || current.coverLinkIdentity() == target.coverLinkIdentity()) return
         val targetSource = sourceManager.get(target.source) ?: return
         val currentSource = sourceManager.get(current.source)
         val flags = sourcePreferences.migrationFlags.get()
+        val keepCover = MigrationFlag.COVER in flags
+        val currentCoverLink = coverLinkStore.get(current)
 
         try {
             updateMangaFromRemote(target, fetchChapters = true).getOrThrow()
@@ -126,14 +133,18 @@ class MigrateMangaUseCase(
                 scope.launch { downloadManager.deleteManga(current, currentSource) }
             }
 
-            // Update custom cover (recheck if custom cover exists)
-            val isMigratingCustomCover = MigrationFlag.CUSTOM_INFO in flags && current.hasCustomCover(coverCache)
-            if (isMigratingCustomCover) {
-                coverCache.getCustomCoverFile(current.id).inputStream().use {
-                    coverCache.setCustomCoverToCache(target, it)
-                }
-            }
-            coverCache.deleteCustomCover(current.id)
+            val isMigratingCustomCover = keepCover && currentCoverLink == null && current.hasCustomCover(coverCache)
+            val coverLink = when {
+                !keepCover -> null
+                currentCoverLink != null -> currentCoverLink
+                isMigratingCustomCover -> null
+                else -> CoverLink(
+                    sourceId = current.source,
+                    url = current.url,
+                    title = current.effectiveTitle,
+                    sourceName = (currentSource ?: sourceManager.getOrStub(current.source)).name,
+                )
+            }?.takeUnless { it.identity == target.coverLinkIdentity() }
 
             val now = Clock.System.now()
 
@@ -146,7 +157,6 @@ class MigrateMangaUseCase(
                 .takeIf { replace }
             val targetMangaUpdate = MangaUpdate(target.id) {
                 favoriteAt = current.favoriteAt?.takeIf { replace } ?: Clock.System.now()
-                coverLastModified = if (isMigratingCustomCover) now else target.coverLastModified
                 if (MigrationFlag.CUSTOM_INFO in flags) {
                     customInfo =
                         CustomMangaInfo.Set(
@@ -163,7 +173,21 @@ class MigrateMangaUseCase(
                 if (MigrationFlag.NOTES in flags) notes = current.notes
             }
 
-            updateManga.awaitAll(listOfNotNull(currentMangaUpdate, targetMangaUpdate))
+            if (updateManga.awaitAll(listOfNotNull(currentMangaUpdate, targetMangaUpdate))) {
+                if (isMigratingCustomCover) {
+                    coverCache.getCustomCoverFile(current.id).inputStream().use {
+                        coverCache.setCustomCoverToCache(target, it)
+                    }
+                } else {
+                    coverCache.deleteCustomCover(target.id)
+                }
+                coverLinkStore.set(target, coverLink)
+                if (replace) {
+                    coverLinkStore.set(current, null)
+                    coverCache.deleteCustomCover(current.id)
+                }
+                updateManga.awaitUpdateCoverLastModified(target.id)
+            }
         } catch (e: Throwable) {
             if (e is CancellationException) {
                 throw e

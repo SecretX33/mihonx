@@ -26,6 +26,7 @@ import eu.kanade.domain.source.interactor.GetIncognitoState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.util.removeCovers
@@ -71,6 +72,7 @@ class BrowseSourceViewModel(
     sourcePreferences: SourcePreferences,
     private val libraryPreferences: LibraryPreferences,
     private val coverCache: CoverCache,
+    private val coverLinkStore: CoverLinkStore,
     private val getRemoteManga: GetRemoteManga,
     private val getDuplicateLibraryManga: GetDuplicateLibraryManga,
     private val getCategories: GetCategories,
@@ -239,8 +241,11 @@ class BrowseSourceViewModel(
     fun changeMangaFavorite(manga: Manga) {
         appScope.launch {
             val update = if (manga.favorite) {
-                manga.removeCovers(coverCache)
-                MangaUpdate(manga.id) { favoriteAt = null }
+                val cleanedManga = manga.removeCovers(coverCache, coverLinkStore)
+                MangaUpdate(manga.id) {
+                    favoriteAt = null
+                    coverLastModified = cleanedManga.coverLastModified
+                }
             } else {
                 setMangaDefaultChapterFlags.await(manga)
                 addTracks.bindEnhancedTrackers(manga, sourceManager.getOrStub(manga.source))

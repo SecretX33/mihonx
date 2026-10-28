@@ -11,5 +11,6 @@ fun MigrationFlag.getLabel(): StringResource {
         MigrationFlag.CUSTOM_INFO -> MR.strings.custom_manga_info
         MigrationFlag.NOTES -> MR.strings.action_notes
         MigrationFlag.REMOVE_DOWNLOAD -> MR.strings.delete_downloaded
+        MigrationFlag.COVER -> MR.strings.migration_keep_cover
     }
 }

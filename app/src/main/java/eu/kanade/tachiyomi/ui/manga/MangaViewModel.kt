@@ -38,6 +38,7 @@ import eu.kanade.presentation.manga.DownloadAction
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -147,6 +148,7 @@ class MangaViewModel(
     private val sourceManager: SourceManager,
     private val refreshTracks: RefreshTracks,
     private val coverCache: CoverCache,
+    private val coverLinkStore: CoverLinkStore,
 ) : ViewModel() {
 
     private val subscriberGate = SubscriberGate()
@@ -422,8 +424,13 @@ class MangaViewModel(
             if (isFavorited) {
                 // Remove from library
                 if (updateManga.awaitUpdateFavorite(manga.id, false)) {
-                    manga.removeCovers(coverCache)
-                    updateManga.await(MangaUpdate(manga.id) { customInfo = CustomMangaInfo.ClearAll })
+                    val cleanedManga = manga.removeCovers(coverCache, coverLinkStore)
+                    updateManga.await(
+                        MangaUpdate(manga.id) {
+                            customInfo = CustomMangaInfo.ClearAll
+                            coverLastModified = cleanedManga.coverLastModified
+                        },
+                    )
                     onRemoved()
                 }
             } else {

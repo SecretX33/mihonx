@@ -10,6 +10,8 @@ Backups are portable in both directions. Mihon `v0.21.3` backups restore in Miho
 
 ### User-facing changes
 
+- Choose another source entry for a library title's cover from the cover viewer toolbar. Keep a persistent cover link, fall back to existing cover behavior when unavailable, and include links in backups that contain app settings. Removing an entry from the library clears its cover link.
+- Use a compact selector to choose whether migration keeps the current source cover, cover link, or custom cover, or switches to the destination source cover. Default to keeping an existing cover link and otherwise use the destination cover. Migrating to the linked cover entry uses its cover directly without a redundant link. Keep this choice separate from custom text metadata.
 - Skip configurable beginning and ending filler pages for each scanlator in a manga entry while reading. Show visible page numbers in the reader and chapter progress, mark skipped positions in orange on the reader slider, and adjust filler counts with plus and minus buttons.
 - Edit a library entry's title, author, artist, description, genres, and status, or reset individual fields to their source values. Custom titles appear throughout the library, series screens, and initial tracker search.
 - Hide or unhide selected chapters, identify hidden chapters in the list, and filter between hidden and visible chapters. Reader navigation skips hidden chapters, and library unread counts exclude them.

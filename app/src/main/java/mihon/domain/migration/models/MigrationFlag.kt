@@ -8,6 +8,7 @@ enum class MigrationFlag(val flag: Int) {
     CUSTOM_INFO(0b01000), // previously custom cover
     NOTES(0b100000),
     REMOVE_DOWNLOAD(0b10000),
+    COVER(0b1000000),
     ;
 
     companion object {

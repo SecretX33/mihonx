@@ -3,6 +3,8 @@ package mihon.domain.migration.usecases
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLink
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.Source
@@ -11,10 +13,13 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -22,6 +27,7 @@ import mihon.domain.migration.models.MigrationFlag
 import mihon.domain.source.interactor.UpdateMangaFromRemote
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
@@ -36,6 +42,8 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.UpsertTrack
+import java.io.File
+import java.io.IOException
 import kotlin.time.Instant
 
 class MigrateMangaUseCaseTest {
@@ -55,6 +63,10 @@ class MigrateMangaUseCaseTest {
     private val coverCache = mockk<CoverCache>(relaxed = true)
     private val getHistory = mockk<GetHistory>()
     private val upsertHistory = mockk<UpsertHistory>()
+    private val coverLinkStore = mockk<CoverLinkStore>(relaxed = true)
+
+    @TempDir
+    lateinit var tempDir: File
 
     private val useCase = MigrateMangaUseCase(
         scope = CoroutineScope(Dispatchers.Unconfined),
@@ -73,10 +85,11 @@ class MigrateMangaUseCaseTest {
         getHistory = getHistory,
         upsertHistory = upsertHistory,
         updateMangaFromRemote = updateMangaFromRemote,
+        coverLinkStore = coverLinkStore,
     )
 
-    private val current = Manga.create().copy(id = 1L, source = 10L)
-    private val target = Manga.create().copy(id = 2L, source = 42L)
+    private val current = Manga.create().copy(id = 1L, source = 10L, url = "/original", title = "Original")
+    private val target = Manga.create().copy(id = 2L, source = 42L, url = "/destination", title = "Destination")
 
     private val historyUpdatesSlot = slot<Collection<HistoryUpdate>>()
 
@@ -91,6 +104,8 @@ class MigrateMangaUseCaseTest {
 
         coEvery { updateMangaFromRemote(target, fetchChapters = true) } returns Result.success(mockk())
         coEvery { getTracks.await(current.id) } returns emptyList()
+        coEvery { updateManga.awaitAll(any()) } returns true
+        every { coverLinkStore.get(any()) } returns null
 
         coEvery { upsertHistory.awaitAll(capture(historyUpdatesSlot)) } just Runs
     }
@@ -230,6 +245,163 @@ class MigrateMangaUseCaseTest {
 
             historyUpdatesSlot.captured.shouldBeEmpty()
         }
+    }
+
+    @Test
+    fun `keeping source cover creates a link to the original entry`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        coEvery { sourceManager.getOrStub(current.source) } returns mockk { every { name } returns "Original source" }
+
+        useCase(current, target, replace = true)
+
+        verify {
+            coverLinkStore.set(
+                target,
+                CoverLink(current.source, current.url, current.effectiveTitle, "Original source"),
+            )
+            coverLinkStore.set(current, null)
+        }
+    }
+
+    @Test
+    fun `keeping a linked cover carries its exact identity to the destination`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        val link = CoverLink(99, "/cover-entry", "Cover entry", "Cover source")
+        every { coverLinkStore.get(current) } returns link
+
+        useCase(current, target, replace = true)
+
+        verify { coverLinkStore.set(target, link) }
+        verify { coverLinkStore.set(current, null) }
+        coVerifyOrder {
+            updateManga.awaitAll(any())
+            coverLinkStore.set(target, link)
+            updateManga.awaitUpdateCoverLastModified(target.id)
+        }
+    }
+
+    @Test
+    fun `destination cover clears its link and custom image independently of metadata`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.CUSTOM_INFO)
+        every { coverLinkStore.get(current) } returns CoverLink(99, "/old-cover", "Old", "Source")
+
+        useCase(current, target, replace = true)
+
+        verify { coverLinkStore.set(target, null) }
+        verify { coverCache.deleteCustomCover(target.id) }
+        verify(exactly = 0) { coverCache.setCustomCoverToCache(any(), any()) }
+    }
+
+    @Test
+    fun `copying keeps the original cover link and custom cover`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        val link = CoverLink(99, "/cover-entry", "Cover entry", "Cover source")
+        every { coverLinkStore.get(current) } returns link
+
+        useCase(current, target, replace = false)
+
+        verify { coverLinkStore.set(target, link) }
+        verify(exactly = 0) { coverLinkStore.set(current, any()) }
+        verify(exactly = 0) { coverCache.deleteCustomCover(current.id) }
+    }
+
+    @Test
+    fun `moving to the linked source entry uses its own cover without a redundant link`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        every { coverLinkStore.get(current) } returns CoverLink(target.source, target.url, "Target", "Target source")
+
+        useCase(current, target, replace = true)
+
+        verify { coverLinkStore.set(target, null) }
+    }
+
+    @Test
+    fun `custom cover is copied independently of custom text metadata`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        val customCover = File(tempDir, "custom-cover").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        every { coverCache.getCustomCoverFile(current.id) } returns customCover
+        every { coverCache.hasCustomCover(current.id) } returns true
+        var copiedBytes: List<Byte>? = null
+        every { coverCache.setCustomCoverToCache(target, any()) } answers {
+            copiedBytes = secondArg<java.io.InputStream>().readBytes().toList()
+        }
+
+        useCase(current, target, replace = false)
+
+        copiedBytes shouldBe listOf<Byte>(1, 2, 3)
+        verify { coverLinkStore.set(target, null) }
+        verify(exactly = 0) { coverCache.deleteCustomCover(current.id) }
+    }
+
+    @Test
+    fun `linked cover takes priority over a hidden custom image`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        val link = CoverLink(99, "/cover-entry", "Cover entry", "Cover source")
+        every { coverLinkStore.get(current) } returns link
+        every { coverCache.getCustomCoverFile(current.id) } returns
+            File(tempDir, "custom").apply { writeText("custom") }
+
+        useCase(current, target, replace = false)
+
+        verify { coverLinkStore.set(target, link) }
+        verify { coverCache.deleteCustomCover(target.id) }
+        verify(exactly = 0) { coverCache.setCustomCoverToCache(any(), any()) }
+    }
+
+    @Test
+    fun `failed source update leaves cover links untouched`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        coEvery { updateMangaFromRemote(target, fetchChapters = true) } returns
+            Result.failure(IOException("Unavailable"))
+
+        useCase(current, target, replace = true)
+
+        verify(exactly = 0) { coverLinkStore.set(any(), any()) }
+        verify(exactly = 0) { coverCache.deleteCustomCover(any()) }
+    }
+
+    @Test
+    fun `failed database update does not move cover links`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        every { coverLinkStore.get(current) } returns CoverLink(99, "/cover-entry", "Cover entry", "Cover source")
+        coEvery { updateManga.awaitAll(any()) } returns false
+
+        useCase(current, target, replace = true)
+
+        verify(exactly = 0) { coverLinkStore.set(any(), any()) }
+        verify(exactly = 0) { coverCache.deleteCustomCover(any()) }
+    }
+
+    @Test
+    fun `migrating an entry to itself does not change covers`() = runBlocking<Unit> {
+        useCase(current, current, replace = true)
+
+        verify(exactly = 0) { coverLinkStore.set(any(), any()) }
+        coVerify(exactly = 0) { updateMangaFromRemote(current, fetchChapters = true) }
+    }
+
+    @Test
+    fun `another entry on the linked source retains the original cover link`() = runBlocking<Unit> {
+        selectFlags(MigrationFlag.COVER)
+        val link = CoverLink(target.source, "/other-entry", "Cover", "Cover source")
+        every { coverLinkStore.get(current) } returns link
+
+        useCase(current, target, replace = true)
+
+        verify { coverLinkStore.set(target, link) }
+    }
+
+    @Test
+    fun `same entry identity with a different database ID does not migrate`() = runBlocking<Unit> {
+        useCase(current, current.copy(id = 99), replace = true)
+
+        verify(exactly = 0) { coverLinkStore.set(any(), any()) }
+        coVerify(exactly = 0) { updateMangaFromRemote(any<Manga>(), fetchChapters = true) }
+        coVerify(exactly = 0) { updateManga.awaitAll(any()) }
+    }
+
+    private fun selectFlags(vararg flags: MigrationFlag) {
+        every { sourcePreferences.migrationFlags.get() } returns flags.toSet()
     }
 
     private fun chapter(id: Long, mangaId: Long, chapterNumber: Double) =

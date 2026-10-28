@@ -47,6 +47,7 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.manga.cover.CoverSearchScreen
 import eu.kanade.tachiyomi.ui.manga.notes.MangaNotesScreen
 import eu.kanade.tachiyomi.ui.manga.track.TrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
@@ -275,6 +276,8 @@ class MangaScreen(
                         create(mangaId = mangaId)
                     }
                 val manga by vm.state.collectAsStateWithLifecycle()
+                val coverLink by vm.coverLink.collectAsStateWithLifecycle()
+                val usingLinkedCover by vm.usingLinkedCover.collectAsStateWithLifecycle()
                 if (manga != null) {
                     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
                         if (it == null) return@rememberLauncherForActivityResult
@@ -286,6 +289,12 @@ class MangaScreen(
                         isCustomCover = remember(manga) { manga!!.hasCustomCover() },
                         onShareClick = { vm.shareCover(context) },
                         onSaveClick = { vm.saveCover(context) },
+                        coverLink = coverLink,
+                        usingLinkedCover = usingLinkedCover,
+                        onChooseCoverSource = {
+                            navigator.push(CoverSearchScreen(manga!!.id, manga!!.effectiveTitle))
+                        }.takeIf { manga!!.favorite },
+                        onRemoveCoverLink = { vm.removeCoverLink(context) },
                         onEditClick = {
                             when (it) {
                                 EditCoverAction.EDIT -> getContent.launch("image/*")

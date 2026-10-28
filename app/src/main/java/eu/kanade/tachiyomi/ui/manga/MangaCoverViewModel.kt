@@ -18,6 +18,8 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
+import eu.kanade.tachiyomi.data.cache.coverLinkIdentity
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.saver.Location
@@ -28,6 +30,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,6 +54,7 @@ class MangaCoverViewModel(
     private val coverCache: CoverCache,
     private val updateManga: UpdateManga,
     private val coverManager: LocalCoverManager,
+    private val coverLinkStore: CoverLinkStore,
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : ViewModel() {
 
@@ -62,6 +68,27 @@ class MangaCoverViewModel(
     val state: StateFlow<Manga?> = getManga.subscribe(mangaId)
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+
+    val coverLink = state.filterNotNull()
+        .flatMapLatest(coverLinkStore::observe)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+
+    val usingLinkedCover = combine(state, coverLinkStore.usage) { manga, usage ->
+        manga?.let { usage[it.coverLinkIdentity()] }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+
+    fun removeCoverLink(context: Context) {
+        val manga = state.value ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                coverLinkStore.set(manga, null)
+                updateManga.awaitUpdateCoverLastModified(manga.id)
+                notifyCoverUpdated(context)
+            } catch (e: Exception) {
+                notifyFailedCoverUpdate(context, e)
+            }
+        }
+    }
 
     fun saveCover(context: Context) {
         viewModelScope.launch {

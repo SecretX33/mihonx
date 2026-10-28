@@ -20,6 +20,7 @@ import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.presentation.manga.DownloadAction
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.CoverLinkStore
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -95,6 +96,7 @@ class LibraryViewModel(
     private val preferences: BasePreferences,
     private val libraryPreferences: LibraryPreferences,
     private val coverCache: CoverCache,
+    private val coverLinkStore: CoverLinkStore,
     private val sourceManager: SourceManager,
     private val downloadManager: DownloadManager,
     private val downloadCache: DownloadCache,
@@ -566,8 +568,9 @@ class LibraryViewModel(
         appScope.launch {
             if (deleteFromLibrary) {
                 val toDelete = mangas.map {
-                    it.removeCovers(coverCache)
-                    MangaUpdate(it.id) {
+                    val manga = it.removeCovers(coverCache, coverLinkStore)
+                    MangaUpdate(manga.id) {
+                        coverLastModified = manga.coverLastModified
                         favoriteAt = null
                         customInfo = CustomMangaInfo.ClearAll
                     }

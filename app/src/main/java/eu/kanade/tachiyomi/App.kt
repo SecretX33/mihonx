@@ -36,6 +36,7 @@ import eu.kanade.tachiyomi.data.coil.ExtensionIconFetcher
 import eu.kanade.tachiyomi.data.coil.ImageDecoder
 import eu.kanade.tachiyomi.data.coil.InstalledExtensionIconKeyer
 import eu.kanade.tachiyomi.data.coil.InstalledSourceIconKeyer
+import eu.kanade.tachiyomi.data.coil.LinkedCoverInterceptor
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverKeyer
 import eu.kanade.tachiyomi.data.coil.MangaKeyer
@@ -104,6 +105,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     @Inject private lateinit var sourceManager: Lazy<SourceManager>
 
     @Inject private lateinit var extensionManager: Lazy<ExtensionManager>
+
+    @Inject private lateinit var linkedCoverInterceptor: Lazy<LinkedCoverInterceptor>
 
     @Inject private lateinit var widgetManager: WidgetManager
 
@@ -251,6 +254,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 add(InstalledSourceIconKeyer())
                 // Interceptor
                 add(CoverRequestInterceptor())
+                add(linkedCoverInterceptor.value)
             }
 
             memoryCache(
