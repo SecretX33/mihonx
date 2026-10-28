@@ -20,6 +20,8 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import mihon.domain.migration.models.MigrationFlag
 import mihon.domain.source.interactor.UpdateMangaFromRemote
@@ -39,10 +41,10 @@ import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
-import tachiyomi.domain.track.interactor.InsertTrack
+import tachiyomi.domain.track.interactor.UpsertTrack
 import java.io.File
 import java.io.IOException
-import java.util.Date
+import kotlin.time.Instant
 
 class MigrateMangaUseCaseTest {
 
@@ -57,7 +59,7 @@ class MigrateMangaUseCaseTest {
     private val getCategories = mockk<GetCategories>(relaxed = true)
     private val setMangaCategories = mockk<SetMangaCategories>(relaxed = true)
     private val getTracks = mockk<GetTracks>()
-    private val insertTrack = mockk<InsertTrack>(relaxed = true)
+    private val upsertTrack = mockk<UpsertTrack>(relaxed = true)
     private val coverCache = mockk<CoverCache>(relaxed = true)
     private val getHistory = mockk<GetHistory>()
     private val upsertHistory = mockk<UpsertHistory>()
@@ -67,6 +69,7 @@ class MigrateMangaUseCaseTest {
     lateinit var tempDir: File
 
     private val useCase = MigrateMangaUseCase(
+        scope = CoroutineScope(Dispatchers.Unconfined),
         sourcePreferences = sourcePreferences,
         trackerManager = trackerManager,
         sourceManager = sourceManager,
@@ -77,7 +80,7 @@ class MigrateMangaUseCaseTest {
         getCategories = getCategories,
         setMangaCategories = setMangaCategories,
         getTracks = getTracks,
-        insertTrack = insertTrack,
+        upsertTrack = upsertTrack,
         coverCache = coverCache,
         getHistory = getHistory,
         upsertHistory = upsertHistory,
@@ -96,8 +99,8 @@ class MigrateMangaUseCaseTest {
         every { migrationFlagsPreference.get() } returns setOf(MigrationFlag.CHAPTER)
         every { sourcePreferences.migrationFlags } returns migrationFlagsPreference
 
-        every { sourceManager.get(target.source) } returns mockk<Source>(relaxed = true)
-        every { sourceManager.get(current.source) } returns null
+        coEvery { sourceManager.get(target.source) } returns mockk<Source>(relaxed = true)
+        coEvery { sourceManager.get(current.source) } returns null
 
         coEvery { updateMangaFromRemote(target, fetchChapters = true) } returns Result.success(mockk())
         coEvery { getTracks.await(current.id) } returns emptyList()
@@ -141,7 +144,7 @@ class MigrateMangaUseCaseTest {
     @Test
     fun `history is migrated to matching target chapter`() {
         runBlocking {
-            val readAt = Date(1_000_000L)
+            val readAt = Instant.fromEpochMilliseconds(1_000_000L)
             val prevChapter = chapter(id = 10, mangaId = current.id, chapterNumber = 5.0)
             val targetChapter = chapter(id = 20, mangaId = target.id, chapterNumber = 5.0)
 
@@ -167,7 +170,7 @@ class MigrateMangaUseCaseTest {
             coEvery { getChaptersByMangaId.await(current.id) } returns listOf(prevChapter)
             coEvery { getChaptersByMangaId.await(target.id) } returns emptyList()
             coEvery { getHistory.await(current.id) } returns listOf(
-                history(chapterId = prevChapter.id, readAt = Date(1_000_000L)),
+                history(chapterId = prevChapter.id, readAt = Instant.fromEpochMilliseconds(1_000_000L)),
             )
 
             useCase(current, target, replace = false)
@@ -179,7 +182,7 @@ class MigrateMangaUseCaseTest {
     @Test
     fun `multiple target chapters at same number each get a history update`() {
         runBlocking {
-            val readAt = Date(1_000_000L)
+            val readAt = Instant.fromEpochMilliseconds(1_000_000L)
             val prevChapter = chapter(id = 10, mangaId = current.id, chapterNumber = 5.0)
             val targetChapter1 = chapter(id = 20, mangaId = target.id, chapterNumber = 5.0)
             val targetChapter2 = chapter(id = 21, mangaId = target.id, chapterNumber = 5.0)
@@ -205,8 +208,8 @@ class MigrateMangaUseCaseTest {
     @Test
     fun `duplicate histories for same chapter number keeps the most recently read`() {
         runBlocking {
-            val olderReadAt = Date(1_000_000L)
-            val newerReadAt = Date(2_000_000L)
+            val olderReadAt = Instant.fromEpochMilliseconds(1_000_000L)
+            val newerReadAt = Instant.fromEpochMilliseconds(2_000_000L)
             val prevChapter1 = chapter(id = 10, mangaId = current.id, chapterNumber = 5.0)
             val prevChapter2 = chapter(id = 11, mangaId = current.id, chapterNumber = 5.0)
             val targetChapter = chapter(id = 20, mangaId = target.id, chapterNumber = 5.0)
@@ -235,7 +238,7 @@ class MigrateMangaUseCaseTest {
             coEvery { getChaptersByMangaId.await(current.id) } returns listOf(prevChapter)
             coEvery { getChaptersByMangaId.await(target.id) } returns listOf(targetChapter)
             coEvery { getHistory.await(current.id) } returns listOf(
-                history(chapterId = prevChapter.id, readAt = Date(1_000_000L)),
+                history(chapterId = prevChapter.id, readAt = Instant.fromEpochMilliseconds(1_000_000L)),
             )
 
             useCase(current, target, replace = false)
@@ -247,7 +250,7 @@ class MigrateMangaUseCaseTest {
     @Test
     fun `keeping source cover creates a link to the original entry`() = runBlocking<Unit> {
         selectFlags(MigrationFlag.COVER)
-        every { sourceManager.getOrStub(current.source) } returns mockk { every { name } returns "Original source" }
+        coEvery { sourceManager.getOrStub(current.source) } returns mockk { every { name } returns "Original source" }
 
         useCase(current, target, replace = true)
 
@@ -317,6 +320,7 @@ class MigrateMangaUseCaseTest {
         selectFlags(MigrationFlag.COVER)
         val customCover = File(tempDir, "custom-cover").apply { writeBytes(byteArrayOf(1, 2, 3)) }
         every { coverCache.getCustomCoverFile(current.id) } returns customCover
+        every { coverCache.hasCustomCover(current.id) } returns true
         var copiedBytes: List<Byte>? = null
         every { coverCache.setCustomCoverToCache(target, any()) } answers {
             copiedBytes = secondArg<java.io.InputStream>().readBytes().toList()
@@ -403,6 +407,6 @@ class MigrateMangaUseCaseTest {
     private fun chapter(id: Long, mangaId: Long, chapterNumber: Double) =
         Chapter.create().copy(id = id, mangaId = mangaId, chapterNumber = chapterNumber)
 
-    private fun history(chapterId: Long, readAt: Date?, readDuration: Long = 0L) =
+    private fun history(chapterId: Long, readAt: Instant?, readDuration: Long = 0L) =
         History(id = chapterId * 100, chapterId = chapterId, readAt = readAt, readDuration = readDuration)
 }

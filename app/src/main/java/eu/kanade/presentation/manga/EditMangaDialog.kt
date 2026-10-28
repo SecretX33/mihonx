@@ -18,12 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -49,6 +47,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.source.model.SManga
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Close
+import mihon.icons.materialsymbols.rounded.Public
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -104,7 +105,7 @@ fun EditMangaDialog(
                             {
                                 IconButton(onClick = { title = "" }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = MaterialSymbols.Rounded.Close,
                                         contentDescription = stringResource(MR.strings.action_reset),
                                     )
                                 }
@@ -155,7 +156,7 @@ fun EditMangaDialog(
                             {
                                 IconButton(onClick = { author = "" }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = MaterialSymbols.Rounded.Close,
                                         contentDescription = stringResource(MR.strings.action_reset),
                                     )
                                 }
@@ -206,7 +207,7 @@ fun EditMangaDialog(
                             {
                                 IconButton(onClick = { artist = "" }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = MaterialSymbols.Rounded.Close,
                                         contentDescription = stringResource(MR.strings.action_reset),
                                     )
                                 }
@@ -258,7 +259,7 @@ fun EditMangaDialog(
                             {
                                 IconButton(onClick = { description = "" }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = MaterialSymbols.Rounded.Close,
                                         contentDescription = stringResource(MR.strings.action_reset),
                                     )
                                 }
@@ -335,7 +336,7 @@ fun EditMangaDialog(
                                 trailingIcon = if (value == manga.status) {
                                     {
                                         Icon(
-                                            imageVector = Icons.Outlined.Public,
+                                            imageVector = MaterialSymbols.Rounded.Public,
                                             contentDescription = null,
                                             modifier = Modifier.size(20.dp),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -372,7 +373,7 @@ fun EditMangaDialog(
                             label = { Text(tag) },
                             trailingIcon = {
                                 Icon(
-                                    imageVector = Icons.Filled.Close,
+                                    imageVector = MaterialSymbols.Rounded.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                 )
@@ -395,7 +396,7 @@ fun EditMangaDialog(
                             {
                                 IconButton(onClick = { newTag = "" }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = MaterialSymbols.Rounded.Close,
                                         contentDescription = stringResource(MR.strings.action_reset),
                                     )
                                 }

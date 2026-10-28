@@ -31,6 +31,7 @@ class BackupCompatibilityTest {
                         ),
                     ),
                     notes = "Notes",
+                    nextUpdate = 123456789L,
                     initialized = true,
                     memo = "{}".encodeToByteArray(),
                 ),
@@ -45,6 +46,7 @@ class BackupCompatibilityTest {
         manga.url shouldBe "/series"
         manga.title shouldBe "Series"
         manga.notes shouldBe "Notes"
+        manga.nextUpdate shouldBe 123456789L
         manga.initialized shouldBe true
         manga.customTitle shouldBe ""
         manga.customGenre shouldBe emptyList()
@@ -76,6 +78,7 @@ class BackupCompatibilityTest {
                         ),
                     ),
                     notes = "Notes",
+                    nextUpdate = 123456789L,
                     initialized = true,
                     customTitle = "Custom series",
                     customAuthor = "Custom author",
@@ -93,6 +96,7 @@ class BackupCompatibilityTest {
         manga.url shouldBe "/series"
         manga.title shouldBe "Series"
         manga.notes shouldBe "Notes"
+        manga.nextUpdate shouldBe 123456789L
         manga.initialized shouldBe true
         val restored = ProtoBuf.decodeFromByteArray<Backup>(ProtoBuf.encodeToByteArray(backup))
         restored.backupManga.single().getMangaImpl().scanlatorFillerPages shouldBe fillerRules
@@ -119,6 +123,7 @@ class BackupCompatibilityTest {
                         ),
                     ),
                     notes = "Notes",
+                    nextUpdate = 123456789L,
                     customTitle = "Custom series",
                     scanlatorFillerPages = listOf(BackupScanlatorFillerPages("Alpha", 2, 1)),
                 ),
@@ -134,6 +139,7 @@ class BackupCompatibilityTest {
         manga.url shouldBe "/series"
         manga.title shouldBe "Series"
         manga.notes shouldBe "Notes"
+        manga.nextUpdate shouldBe 123456789L
         manga.customTitle shouldBe ""
         manga.scanlatorFillerPages shouldBe emptyList()
         chapter.url shouldBe "/chapter-1"
@@ -157,6 +163,7 @@ private data class UpstreamBackupManga(
     @ProtoNumber(110) val notes: String = "",
     @ProtoNumber(111) val initialized: Boolean = false,
     @ProtoNumber(112) val memo: ByteArray = "{}".encodeToByteArray(),
+    @ProtoNumber(113) val nextUpdate: Long = 0,
 )
 
 @Serializable

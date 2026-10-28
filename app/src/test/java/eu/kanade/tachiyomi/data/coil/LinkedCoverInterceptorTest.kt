@@ -28,7 +28,7 @@ class LinkedCoverInterceptorTest {
 
     private val manga = Manga.create().copy(id = 1, source = 10, url = "/original")
     private val link = CoverLink(20, "/selected", "Selected", "Cover source")
-    private val cover = MangaCover(-1, 20, false, "https://covers.example/cover.jpg", 0)
+    private val cover = MangaCover(-1, 20, false, "https://covers.example/cover.jpg", null)
     private val store = mockk<CoverLinkStore>(relaxed = true) {
         every { isEmpty() } returns false
         every { get(manga) } returns link
@@ -114,7 +114,7 @@ class LinkedCoverInterceptorTest {
 
     @Test
     fun `MangaCover models resolve the original entry by its database ID`() = runTest {
-        every { request.data } returns MangaCover(1, 10, true, "original.jpg", 0)
+        every { request.data } returns MangaCover(1, 10, true, "original.jpg", null)
         coEvery { getManga.await(1) } returns manga
 
         (interceptor.intercept(chain) as SuccessResult).image shouldBe linkedSuccess.image

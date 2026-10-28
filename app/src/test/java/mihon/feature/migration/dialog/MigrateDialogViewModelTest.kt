@@ -12,18 +12,17 @@ import mihon.domain.migration.models.MigrationFlag
 import org.junit.jupiter.api.Test
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.domain.manga.model.Manga
-import java.io.File
 
 class MigrateDialogViewModelTest {
 
     private val flags = mockk<Preference<Set<MigrationFlag>>> {
         every { get() } returns setOf(MigrationFlag.CHAPTER, MigrationFlag.CATEGORY, MigrationFlag.COVER)
     }
-    private val customCover = mockk<File> { every { exists() } returns false }
+    private val coverCache = mockk<CoverCache> { every { hasCustomCover(any()) } returns false }
     private val coverLinks = mockk<CoverLinkStore> { every { this@mockk.get(any<Manga>()) } returns null }
     private val model = MigrateDialogViewModel(
         sourcePreference = mockk<SourcePreferences> { every { migrationFlags } returns flags },
-        coverCache = mockk<CoverCache> { every { getCustomCoverFile(any()) } returns customCover },
+        coverCache = coverCache,
         downloadManager = mockk<DownloadManager> { every { getDownloadCount(any()) } returns 0 },
         migrateManga = mockk(),
         coverLinkStore = coverLinks,
@@ -52,7 +51,7 @@ class MigrateDialogViewModelTest {
 
     @Test
     fun `custom cover without a link defaults to Destination`() {
-        every { customCover.exists() } returns true
+        every { coverCache.hasCustomCover(current.id) } returns true
 
         model.init(current, target)
 

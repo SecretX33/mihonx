@@ -47,7 +47,7 @@ fun ChapterInfoDialog(
                 }
                 InfoRow(
                     label = stringResource(MR.strings.chapter_info_last_read),
-                    value = history?.readAt?.let { dateFormat.format(it) } ?: "-",
+                    value = history?.readAt?.let { dateFormat.format(Date(it.toEpochMilliseconds())) } ?: "-",
                 )
                 InfoRow(
                     label = stringResource(MR.strings.chapter_info_read_duration),
@@ -65,7 +65,7 @@ fun ChapterInfoDialog(
                         label = stringResource(MR.strings.chapter_info_reading_progress),
                         value = stringResource(
                             MR.strings.chapter_progress,
-                            fillerPages.displayPageNumber(chapter.lastPageRead),
+                            fillerPages.displayPageNumber(chapter.lastPageRead.toLong()),
                         ),
                     )
                 }
@@ -77,19 +77,11 @@ fun ChapterInfoDialog(
                 }
                 InfoRow(
                     label = stringResource(MR.strings.chapter_info_date_uploaded),
-                    value = if (chapter.dateUpload > 0) {
-                        dateFormat.format(Date(chapter.dateUpload))
-                    } else {
-                        "-"
-                    },
+                    value = chapter.dateUpload?.let { dateFormat.format(Date(it.toEpochMilliseconds())) } ?: "-",
                 )
                 InfoRow(
                     label = stringResource(MR.strings.chapter_info_date_fetched),
-                    value = if (chapter.dateFetch > 0) {
-                        dateFormat.format(Date(chapter.dateFetch))
-                    } else {
-                        "-"
-                    },
+                    value = dateFormat.format(Date(chapter.dateFetch.toEpochMilliseconds())),
                 )
             }
         },

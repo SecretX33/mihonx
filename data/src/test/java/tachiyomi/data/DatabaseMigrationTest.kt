@@ -1,195 +1,121 @@
 package tachiyomi.data
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
-import java.nio.file.Files
-import java.nio.file.Path
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import tachiyomi.data.manga.MangaMapper
+import tachiyomi.domain.manga.model.ScanlatorFillerPages
 
 class DatabaseMigrationTest {
 
-    @TempDir
-    lateinit var tempDir: Path
-
-    @Test
-    fun `fresh database contains both lineages`() = runBlocking {
-        withDriver { driver ->
-            Database.Schema.create(driver).await()
-
-            driver.columns("mangas").shouldContainAll(
-                "custom_title",
-                "custom_author",
-                "custom_artist",
-                "custom_description",
-                "custom_genre",
-                "custom_status",
-                "memo",
-                "scanlator_filler_pages",
+    @ParameterizedTest
+    @ValueSource(longs = [12, 13, 14, 15])
+    fun `MihonX custom data survives upstream migrations`(version: Long): Unit = runBlocking {
+        JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).use { driver ->
+            driver.loadFixture("mihonx-v15.sql")
+            driver.executeSql(
+                """
+                INSERT INTO mangas(_id, source, url, title, status, favorite, initialized, date_added,
+                    custom_title, custom_author, custom_genre, scanlator_filler_pages, memo, viewer, chapter_flags, cover_last_modified)
+                VALUES (2, 1, '/manga', 'Source title', 0, 1, 1, 1234, 'Custom title', 'Custom author',
+                    'Action, Adventure', '{"Group":{"beginning":2,"end":1}}', '{"source":"value"}', 0, 0, 0)
+                """.trimIndent(),
             )
-            driver.columns("chapters").shouldContainAll("excluded", "memo")
-            driver.columns("extension_store").shouldContainAll("extension_list_url")
+            driver.executeSql(
+                """
+                INSERT INTO chapters(_id, manga_id, url, name, chapter_number, excluded, read, bookmark,
+                    last_page_read, source_order, date_fetch, date_upload)
+                VALUES (1, 2, '/chapter', 'Chapter', 1, 1, 0, 1, 3, 0, 100, 100)
+                """.trimIndent(),
+            )
+
+            driver.executeSql(
+                """
+                INSERT INTO mangas(_id, source, url, title, status, favorite, initialized, viewer,
+                    chapter_flags, cover_last_modified, date_added)
+                VALUES (1, 1, '/manga', 'Source title', 0, 1, 1, 0, 0, 0, 1000)
+                """.trimIndent(),
+            )
+            driver.executeSql(
+                """
+                INSERT INTO chapters(_id, manga_id, url, name, chapter_number, excluded, read, bookmark,
+                    last_page_read, source_order, date_fetch, date_upload)
+                VALUES (2, 1, '/chapter', 'Chapter', 1, 0, 0, 0, 0, 0, 100, 100)
+                """.trimIndent(),
+            )
+            driver.executeSql(
+                """
+                INSERT INTO manga_sync(manga_id, sync_id, remote_id, title, last_chapter_read,
+                    total_chapters, status, score, remote_url, start_date, finish_date)
+                VALUES (2, 3, 123, 'Track', 0, 0, 0, 5, '/track', 0, 0)
+                """.trimIndent(),
+            )
+
+            if (version < 15) driver.executeSql("ALTER TABLE mangas DROP COLUMN scanlator_filler_pages")
+            if (version < 14) {
+                driver.executeSql("ALTER TABLE mangas DROP COLUMN memo")
+                driver.executeSql("ALTER TABLE chapters DROP COLUMN memo")
+                driver.executeSql("DROP TABLE extension_store")
+                driver.executeSql(
+                    "CREATE TABLE extension_repos(base_url TEXT, name TEXT, short_name TEXT, signing_key_fingerprint TEXT, website TEXT)",
+                )
+                driver.executeSql(
+                    "INSERT INTO extension_repos VALUES ('https://example.org', 'Example', 'EX', 'key', 'https://example.org')",
+                )
+            }
+            if (version < 13) driver.executeSql("ALTER TABLE chapters DROP COLUMN excluded")
+            driver.executeSql("PRAGMA user_version = $version")
+            Database.Schema.migrate(driver, version, Database.Schema.version).await()
+
+            val manga = testDatabase(driver).mangaQueries.getMangaById(1, MangaMapper::mapManga).awaitAsOne()
+            manga.customTitle shouldBe "Custom title"
+            manga.customAuthor shouldBe "Custom author"
+            manga.customGenre shouldBe listOf("Action", "Adventure")
+            manga.scanlatorFillerPages shouldBe
+                if (version == 15L) mapOf("Group" to ScanlatorFillerPages(2, 1)) else emptyMap()
+            if (version >= 14) manga.memo["source"].toString() shouldBe "\"value\""
+            driver.long("SELECT excluded FROM chapter") shouldBe
+                if (version >= 13) 1L else 0L
+            driver.long("SELECT count(*) FROM manga") shouldBe 1L
+            driver.long("SELECT count(*) FROM chapter") shouldBe 1L
+            driver.long("SELECT CAST(score AS INTEGER) FROM manga_track") shouldBe 10L
+            driver.long("PRAGMA foreign_key_check") shouldBe null
         }
     }
 
-    @Test
-    fun `version 11 database receives both lineages`() = runBlocking {
-        withDriver { driver ->
-            driver.createVersion11Fixture()
-
-            Database.Schema.migrate(driver, oldVersion = 11, newVersion = 15).await()
-
-            driver.columns("mangas").shouldContainAll(
-                "custom_title",
-                "custom_author",
-                "custom_artist",
-                "custom_description",
-                "custom_genre",
-                "custom_status",
-                "memo",
-                "scanlator_filler_pages",
-            )
-            driver.columns("chapters").shouldContainAll("excluded", "memo")
-            driver.string("SELECT index_url FROM extension_store") shouldBe "https://example.org/repo.json"
-            driver.string("SELECT extension_list_url FROM extension_store") shouldBe null
-            driver.tableExists("extension_repos") shouldBe false
-        }
-    }
-
-    @Test
-    fun `version 13 MihonX data survives bridge`() = runBlocking {
-        withDriver { driver ->
-            driver.createVersion13Fixture()
-
-            Database.Schema.migrate(driver, oldVersion = 13, newVersion = 15).await()
-
-            driver.string("SELECT custom_title FROM mangas") shouldBe "Custom title"
-            driver.string("SELECT custom_author FROM mangas") shouldBe "Custom author"
-            driver.long("SELECT excluded FROM chapters") shouldBe 1L
-            driver.string("SELECT index_url FROM extension_store") shouldBe "https://example.org/repo.json"
-            driver.string("SELECT name FROM extension_store") shouldBe "Example"
-            driver.string("SELECT badge_label FROM extension_store") shouldBe "EX"
-            driver.string("SELECT extension_list_url FROM extension_store") shouldBe null
-            driver.columns("mangas").shouldContainAll("memo")
-            driver.columns("mangas").shouldContainAll("scanlator_filler_pages")
-            driver.columns("chapters").shouldContainAll("memo")
-            driver.tableExists("extension_repos") shouldBe false
-        }
-    }
-
-    private suspend fun withDriver(block: suspend (SqlDriver) -> Unit) {
-        val databaseFile = Files.createTempFile(tempDir, "migration-", ".db")
-        JdbcSqliteDriver("jdbc:sqlite:$databaseFile").use { driver ->
-            block(driver)
-        }
-    }
-
-    private suspend fun SqlDriver.createVersion11Fixture() {
-        executeSql("CREATE TABLE mangas(_id INTEGER NOT NULL PRIMARY KEY)")
-        executeSql("CREATE TABLE chapters(_id INTEGER NOT NULL PRIMARY KEY)")
-        createExtensionRepos()
-    }
-
-    private suspend fun SqlDriver.createVersion13Fixture() {
-        executeSql(
-            """
-            CREATE TABLE mangas(
-                _id INTEGER NOT NULL PRIMARY KEY,
-                custom_title TEXT,
-                custom_author TEXT,
-                custom_artist TEXT,
-                custom_description TEXT,
-                custom_genre TEXT,
-                custom_status INTEGER
-            )
-            """.trimIndent(),
-        )
-        executeSql(
-            """
-            CREATE TABLE chapters(
-                _id INTEGER NOT NULL PRIMARY KEY,
-                excluded INTEGER NOT NULL DEFAULT 0
-            )
-            """.trimIndent(),
-        )
-        createExtensionRepos()
-        executeSql(
-            """
-            INSERT INTO mangas(_id, custom_title, custom_author)
-            VALUES (1, 'Custom title', 'Custom author')
-            """.trimIndent(),
-        )
-        executeSql("INSERT INTO chapters(_id, excluded) VALUES (1, 1)")
-    }
-
-    private suspend fun SqlDriver.createExtensionRepos() {
-        executeSql(
-            """
-            CREATE TABLE extension_repos(
-                base_url TEXT NOT NULL PRIMARY KEY,
-                name TEXT NOT NULL,
-                short_name TEXT,
-                website TEXT NOT NULL,
-                signing_key_fingerprint TEXT NOT NULL
-            )
-            """.trimIndent(),
-        )
-        executeSql(
-            """
-            INSERT INTO extension_repos(base_url, name, short_name, website, signing_key_fingerprint)
-            VALUES ('https://example.org', 'Example', 'EX', 'https://example.org', 'fingerprint')
-            """.trimIndent(),
-        )
-    }
-
-    private suspend fun SqlDriver.executeSql(sql: String) {
-        execute(identifier = null, sql = sql, parameters = 0).await()
-    }
-
-    private suspend fun SqlDriver.columns(table: String): Set<String> {
-        return executeQuery(
-            identifier = null,
-            sql = "PRAGMA table_info($table)",
-            mapper = { cursor ->
-                val columns = mutableSetOf<String>()
-                while (cursor.next().value) {
-                    columns += cursor.getString(1)!!
-                }
-                QueryResult.Value(columns)
-            },
-            parameters = 0,
-        ).await()
-    }
-
-    private suspend fun SqlDriver.tableExists(table: String): Boolean {
-        return long("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '$table'") == 1L
-    }
-
-    private suspend fun SqlDriver.string(sql: String): String? {
-        return executeQuery(
-            identifier = null,
-            sql = sql,
-            mapper = { cursor ->
-                check(cursor.next().value)
-                QueryResult.Value(cursor.getString(0))
-            },
-            parameters = 0,
-        ).await()
-    }
-
-    private suspend fun SqlDriver.long(sql: String): Long {
-        return executeQuery(
-            identifier = null,
-            sql = sql,
-            mapper = { cursor ->
-                check(cursor.next().value)
-                QueryResult.Value(cursor.getLong(0)!!)
-            },
-            parameters = 0,
-        ).await()
+    private fun SqlDriver.loadFixture(name: String) {
+        val sql = requireNotNull(javaClass.getResource("/$name")).readText()
+        sql.split("-- statement-break").forEach { executeSql(it.trim()) }
     }
 }
+
+internal fun testDatabase(driver: SqlDriver): Database = Database(
+    driver = driver,
+    historyAdapter = History.Adapter(InstantColumnAdapter),
+    mangaAdapter = Manga.Adapter(
+        remote_genreAdapter = StringListColumnAdapter,
+        custom_genreAdapter = StringListColumnAdapter,
+        scanlator_filler_pagesAdapter = MemoColumnAdapter,
+        remote_update_strategyAdapter = UpdateStrategyColumnAdapter,
+        remote_memoAdapter = MemoColumnAdapter,
+        user_favorite_atAdapter = InstantColumnAdapter,
+        state_chapter_last_updateAdapter = InstantColumnAdapter,
+        state_chapter_next_updateAdapter = InstantColumnAdapter,
+        state_cover_last_modifiedAdapter = InstantColumnAdapter,
+    ),
+    chapterAdapter = Chapter.Adapter(InstantColumnAdapter, MemoColumnAdapter, IntColumnAdapter, InstantColumnAdapter),
+    manga_trackAdapter = Manga_track.Adapter(InstantColumnAdapter, InstantColumnAdapter),
+)
+
+internal fun SqlDriver.executeSql(sql: String) {
+    execute(null, sql, 0).value
+}
+
+internal fun SqlDriver.long(sql: String): Long? = executeQuery(null, sql, { cursor ->
+    QueryResult.Value(if (cursor.next().value) cursor.getLong(0) else null)
+}, 0).value

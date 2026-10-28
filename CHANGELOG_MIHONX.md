@@ -4,9 +4,9 @@ This changelog records changes made by MihonX relative to its Mihon upstream. Fo
 
 ## Unreleased
 
-Baseline: Mihon `v0.20.4` (`df6507256acce8e7f3660783a3db6dbd1a31b6b5`).
+Baseline: Mihon `v0.21.3` (`feadad5e1e2bf638be6e2ca317d11657b09d4596`).
 
-Backups are portable in both directions. Mihon `v0.20.4` backups restore in MihonX, and MihonX backups restore in Mihon with common data intact. Mihon ignores fork-only custom series information, hidden chapter state, and scanlator filler rules, so those fields are not retained if a backup is restored and re-exported by Mihon. The applications keep separate live databases, which are not intended to be copied between installations.
+Backups are portable in both directions. Mihon `v0.21.3` backups restore in MihonX, and MihonX backups restore in Mihon with common data intact. Mihon ignores fork-only custom series information, hidden chapter state, and scanlator filler rules, so those fields are not retained if a backup is restored and re-exported by Mihon. The applications keep separate live databases, which are not intended to be copied between installations.
 
 ### User-facing changes
 
@@ -29,7 +29,7 @@ Backups are portable in both directions. Mihon `v0.20.4` backups restore in Miho
 - Disable telemetry and Firebase integration in MihonX builds.
 - Support manual releases, pipeline-managed versions, MihonX APK names, and isolated upstream tags.
 - Check weekly whether the fork can fast-forward from upstream without rewriting MihonX history.
-- Verify the MihonX database upgrade paths and build process against the Mihon `v0.20.4` project structure.
+- Preserve MihonX custom data through the Mihon `v0.21.3` database upgrades.
 
 ### Notes for maintainers
 

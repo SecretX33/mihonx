@@ -1,5 +1,8 @@
 package eu.kanade.tachiyomi.data.cache
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +30,8 @@ data class CoverLinkIdentity(val sourceId: Long, val url: String)
 @Serializable
 private data class CoverLinkBinding(val manga: CoverLinkIdentity, val cover: CoverLink)
 
+@Inject
+@SingleIn(AppScope::class)
 class CoverLinkStore(preferenceStore: PreferenceStore) {
 
     private data class Snapshot(val encoded: Set<String>, val links: Map<CoverLinkIdentity, CoverLink>)

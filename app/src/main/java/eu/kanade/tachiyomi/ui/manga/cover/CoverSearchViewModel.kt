@@ -1,27 +1,50 @@
 package eu.kanade.tachiyomi.ui.manga.cover
 
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchViewModel
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.interactor.NetworkToLocalManga
+import tachiyomi.domain.source.service.SourceManager
 
-class CoverSearchViewModel(initialQuery: String) : SearchViewModel(State(searchQuery = initialQuery)) {
+@AssistedInject
+class CoverSearchViewModel(
+    @Assisted initialQuery: String,
+    sourcePreferences: SourcePreferences,
+    sourceManager: SourceManager,
+    extensionManager: ExtensionManager,
+    networkToLocalManga: NetworkToLocalManga,
+    getManga: GetManga,
+    preferences: SourcePreferences,
+) : SearchViewModel(
+    initialState = State(searchQuery = initialQuery),
+    sourcePreferences = sourcePreferences,
+    sourceManager = sourceManager,
+    extensionManager = extensionManager,
+    networkToLocalManga = networkToLocalManga,
+    getManga = getManga,
+    preferences = preferences,
+) {
 
     init {
         search()
     }
 
-    override fun getEnabledSources(): List<Source> = super.getEnabledSources()
-        .filterIsInstance<HttpSource>()
-        .filter { !state.value.pinnedOnly || "${it.id}" in pinnedSources }
+    override suspend fun getEnabledSources(): List<Source> = super.getEnabledSources().filterIsInstance<HttpSource>()
 
-    companion object {
-        val INITIAL_QUERY_KEY = CreationExtras.Key<String>()
-
-        val Factory = viewModelFactory {
-            initializer { CoverSearchViewModel(get(INITIAL_QUERY_KEY)!!) }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(initialQuery: String): CoverSearchViewModel
     }
 }

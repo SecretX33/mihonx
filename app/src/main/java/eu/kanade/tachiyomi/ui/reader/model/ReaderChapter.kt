@@ -1,14 +1,24 @@
 package eu.kanade.tachiyomi.ui.reader.model
 
-import eu.kanade.domain.chapter.model.toDbChapter
-import eu.kanade.tachiyomi.data.database.models.Chapter
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.reader.loader.PageLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.ScanlatorFillerPages
 
-data class ReaderChapter(val chapter: Chapter, val fillerPages: ScanlatorFillerPages = ScanlatorFillerPages()) {
+data class ReaderChapter(
+    private val loadedChapter: Chapter,
+    val fillerPages: ScanlatorFillerPages = ScanlatorFillerPages(),
+) {
+
+    /**
+     * The chapter as it currently stands, which drifts from [loadedChapter] as the reader records
+     * progress against it. Equality stays on the chapter it was loaded with, so a chapter held by
+     * the viewers keeps comparing equal to itself while being read.
+     */
+    var chapter: Chapter = loadedChapter
+        private set
 
     val stateFlow = MutableStateFlow<State>(State.Wait)
     var state: State
@@ -39,10 +49,9 @@ data class ReaderChapter(val chapter: Chapter, val fillerPages: ScanlatorFillerP
 
     private var references = 0
 
-    constructor(
-        chapter: tachiyomi.domain.chapter.model.Chapter,
-        fillerPages: ScanlatorFillerPages = ScanlatorFillerPages(),
-    ) : this(chapter.toDbChapter(), fillerPages)
+    fun update(transform: (Chapter) -> Chapter) {
+        chapter = transform(chapter)
+    }
 
     fun ref() {
         references++

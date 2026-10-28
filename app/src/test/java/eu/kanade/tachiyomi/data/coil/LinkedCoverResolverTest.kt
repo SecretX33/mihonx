@@ -7,7 +7,6 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +23,7 @@ class LinkedCoverResolverTest {
 
     private val source = mockk<HttpSource>()
     private val sourceManager = mockk<SourceManager> {
-        every { get(20) } returns source
+        coEvery { get(20) } returns source
     }
     private val link = CoverLink(20, "/selected", "Selected", "Cover source")
     private var time = 0L
@@ -58,7 +57,7 @@ class LinkedCoverResolverTest {
 
     @Test
     fun `missing extension produces no alternate cover`() = runBlocking<Unit> {
-        every { sourceManager.get(20) } returns null
+        coEvery { sourceManager.get(20) } returns null
 
         resolver.resolve(link, allowNetwork = true) shouldBe null
     }

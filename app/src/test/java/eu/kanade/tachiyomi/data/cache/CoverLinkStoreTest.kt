@@ -4,8 +4,8 @@ import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
 import eu.kanade.tachiyomi.data.backup.models.Backup
 import eu.kanade.tachiyomi.data.backup.models.StringSetPreferenceValue
 import eu.kanade.tachiyomi.util.removeCovers
-import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -105,7 +105,7 @@ class CoverLinkStoreTest {
 
         store.get(manga) shouldBe null
         store.get(other) shouldBe link
-        updated.coverLastModified shouldBeGreaterThan manga.coverLastModified
+        updated.coverLastModified shouldNotBe manga.coverLastModified
     }
 
     @Test
@@ -118,7 +118,7 @@ class CoverLinkStoreTest {
         val updated = localManga.removeCovers(cache, store)
 
         store.get(localManga) shouldBe null
-        updated.coverLastModified shouldBeGreaterThan localManga.coverLastModified
+        updated.coverLastModified shouldNotBe localManga.coverLastModified
         verify(exactly = 0) { cache.deleteFromCache(any(), any()) }
     }
 

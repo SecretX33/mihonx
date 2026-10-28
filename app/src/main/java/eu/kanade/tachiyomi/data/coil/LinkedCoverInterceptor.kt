@@ -5,13 +5,16 @@ import coil3.getOrDefault
 import coil3.intercept.Interceptor
 import coil3.request.ImageResult
 import coil3.request.SuccessResult
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.cache.CoverLinkStore
 import kotlinx.coroutines.CancellationException
-import tachiyomi.core.common.util.lang.withIOContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
 
+@Inject
 class LinkedCoverInterceptor(
     private val store: CoverLinkStore,
     private val resolver: LinkedCoverResolver,
@@ -22,7 +25,7 @@ class LinkedCoverInterceptor(
         if (!chain.request.extras.getOrDefault(USE_LINKED_COVER) || store.isEmpty()) return chain.proceed()
         val manga = when (val data = chain.request.data) {
             is Manga -> data
-            is MangaCover -> withIOContext { getManga.await(data.mangaId) }
+            is MangaCover -> withContext(Dispatchers.IO) { getManga.await(data.mangaId) }
             else -> null
         } ?: return chain.proceed()
         val link = store.get(manga) ?: return chain.proceed()
