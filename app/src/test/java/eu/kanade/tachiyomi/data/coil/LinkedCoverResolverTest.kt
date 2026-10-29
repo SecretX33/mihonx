@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.coil
 
+import coil3.disk.DiskCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.cache.CoverLink
 import eu.kanade.tachiyomi.data.cache.LinkedCoverCache
@@ -17,6 +18,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import okio.Path.Companion.toOkioPath
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -43,9 +46,15 @@ class LinkedCoverResolverTest {
 
     @TempDir
     lateinit var directory: File
+    private val diskCache by lazy { DiskCache.Builder().directory(File(directory, "coil").toOkioPath()).build() }
     private val resolver by lazy { newResolver() }
 
-    private fun newResolver() = LinkedCoverResolver(sourceManager, LinkedCoverCache(directory), coverCache) { time }
+    private fun newResolver() = LinkedCoverResolver(sourceManager, LinkedCoverCache { diskCache }, coverCache) { time }
+
+    @AfterEach
+    fun tearDown() {
+        diskCache.shutdown()
+    }
 
     private fun details(url: String? = "https://covers.example/cover.jpg") = SMangaUpdate(
         SManga.create().apply { thumbnail_url = url },
@@ -112,6 +121,18 @@ class LinkedCoverResolverTest {
         newResolver().resolve(link, allowNetwork = false, manga) shouldBe result
         newResolver().resolve(link, allowNetwork = true, manga) shouldBe result
         coVerify(exactly = 1) { source.getMangaUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearing the shared Coil cache evicts resolved details`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
+        resolver.resolve(link, allowNetwork = true, manga)
+
+        diskCache.clear()
+
+        resolver.resolve(link, allowNetwork = false, manga) shouldBe null
+        resolver.resolve(link, allowNetwork = true, manga)?.url shouldBe "https://covers.example/cover.jpg"
+        coVerify(exactly = 2) { source.getMangaUpdate(any(), any(), any(), any()) }
     }
 
     @Test
