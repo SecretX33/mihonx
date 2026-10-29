@@ -1145,4 +1145,14 @@
     <string name="migration_keep_cover_link">Keep current cover link</string>
     <string name="migration_keep_custom_cover">Keep current custom cover</string>
     <string name="migration_use_destination_cover">Use destination source cover</string>
+    <string name="source_filter_defaults_save">Save as default</string>
+    <string name="source_filter_defaults_restore">Restore saved defaults</string>
+    <string name="source_filter_defaults_clear">Clear saved defaults</string>
+    <string name="source_filter_defaults_none">No saved defaults</string>
+    <string name="source_filter_defaults_matches">Matches saved defaults</string>
+    <string name="source_filter_defaults_different">Different from saved defaults</string>
+    <string name="source_filter_defaults_unavailable">Saved defaults need updating</string>
+    <string name="source_filter_defaults_unavailable_message">Saved defaults could not be restored. Save new defaults or clear them.</string>
+    <string name="source_filter_defaults_saved">Default filters saved</string>
+    <string name="source_filter_defaults_cleared">Default filters cleared</string>
 </resources>
