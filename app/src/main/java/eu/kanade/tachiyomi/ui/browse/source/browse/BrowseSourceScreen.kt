@@ -43,7 +43,6 @@ import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
-import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel.DefaultFilterStatus
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel.Listing
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
@@ -72,7 +71,6 @@ import tachiyomi.source.local.LocalSource
 data class BrowseSourceScreen(
     val sourceId: Long,
     private val listingQuery: String?,
-    private val openWithDefaultFilters: Boolean = false,
 ) : Screen(), AssistContentScreen {
 
     private var assistUrl: String? = null
@@ -83,11 +81,7 @@ data class BrowseSourceScreen(
     override fun Content() {
         val viewModel =
             assistedMetroViewModel<BrowseSourceViewModel, BrowseSourceViewModel.Factory> {
-                create(
-                    sourceId = sourceId,
-                    listingQuery = listingQuery,
-                    openWithDefaultFilters = openWithDefaultFilters,
-                )
+                create(sourceId = sourceId, listingQuery = listingQuery)
             }
         val state by viewModel.state.collectAsState()
 
@@ -133,11 +127,6 @@ data class BrowseSourceScreen(
 
         LaunchedEffect(source) {
             assistUrl = (source as? HttpSource)?.getHomeUrl()
-            if (openWithDefaultFilters && state.defaultFilterStatus == DefaultFilterStatus.Unavailable) {
-                snackbarHostState.showSnackbar(
-                    context.stringResource(MR.strings.source_filter_defaults_unavailable_message),
-                )
-            }
         }
 
         Scaffold(

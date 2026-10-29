@@ -69,7 +69,6 @@ import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 class BrowseSourceViewModel(
     @Assisted private val sourceId: Long,
     @Assisted listingQuery: String?,
-    @Assisted private val openWithDefaultFilters: Boolean,
     @AppCoroutineScope private val appScope: CoroutineScope,
     private val sourceManager: SourceManager,
     sourcePreferences: SourcePreferences,
@@ -95,7 +94,7 @@ class BrowseSourceViewModel(
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(AppScope::class)
     interface Factory : ManualViewModelAssistedFactory {
-        fun create(sourceId: Long, listingQuery: String?, openWithDefaultFilters: Boolean): BrowseSourceViewModel
+        fun create(sourceId: Long, listingQuery: String?): BrowseSourceViewModel
     }
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
@@ -118,14 +117,7 @@ class BrowseSourceViewModel(
                     listing = Listing.Search(query, source.getFilterList())
                 }
 
-                if (openWithDefaultFilters && savedFilters?.canRestore(filters) == true) {
-                    val listingFilters = source.getFilterList()
-                    if (savedFilters.restore(listingFilters)) {
-                        savedFilters.restore(filters)
-                        query = null
-                        listing = Listing.Search(null, listingFilters)
-                    }
-                }
+                savedFilters?.restore(filters)
 
                 it.copy(
                     source = source,

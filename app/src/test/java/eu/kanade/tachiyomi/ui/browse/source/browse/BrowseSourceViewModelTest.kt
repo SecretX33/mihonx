@@ -70,15 +70,23 @@ class BrowseSourceViewModelTest {
     }
 
     @Test
-    fun `normal source entry applies saved defaults before publishing its listing`() = runTest {
+    fun `normal source entry keeps Popular and prefills saved defaults without applying them`() = runTest {
         saved[1] = snapshot(completed = true, action = Filter.TriState.STATE_EXCLUDE)
         val model = createModel()
+
+        model.state.value.listing shouldBe Listing.Popular
+        model.state.value.listing.filters.isEmpty() shouldBe true
+        model.state.value.toolbarQuery shouldBe null
+        model.openFilterSheet()
+        model.state.value.listing shouldBe Listing.Popular
+        SourceFilterSnapshot.capture(model.state.value.filters) shouldBe saved[1]
+        model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Matches
+
+        model.search(filters = model.state.value.filters)
 
         val listing = model.state.value.listing.shouldBeInstanceOf<Listing.Search>()
         listing.query shouldBe null
         SourceFilterSnapshot.capture(listing.filters) shouldBe saved[1]
-        SourceFilterSnapshot.capture(model.state.value.filters) shouldBe saved[1]
-        model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Matches
     }
 
     @Test
@@ -92,7 +100,9 @@ class BrowseSourceViewModelTest {
         val reopened = createModel()
         val otherSource = createModel(sourceId = 2)
 
-        SourceFilterSnapshot.capture(reopened.state.value.listing.filters) shouldBe snapshot(completed = true)
+        reopened.state.value.listing shouldBe Listing.Popular
+        reopened.openFilterSheet()
+        SourceFilterSnapshot.capture(reopened.state.value.filters) shouldBe snapshot(completed = true)
         otherSource.state.value.listing shouldBe Listing.Popular
         otherSource.state.value.hasSavedFilters shouldBe false
     }
@@ -111,9 +121,10 @@ class BrowseSourceViewModelTest {
         saved[1] shouldBe snapshot(action = Filter.TriState.STATE_EXCLUDE)
 
         val reopened = createModel()
-        reopened.state.value.listing.query shouldBe null
+        reopened.state.value.listing shouldBe Listing.Popular
         reopened.state.value.toolbarQuery shouldBe null
-        SourceFilterSnapshot.capture(reopened.state.value.listing.filters) shouldBe saved[1]
+        reopened.openFilterSheet()
+        SourceFilterSnapshot.capture(reopened.state.value.filters) shouldBe saved[1]
     }
 
     @Test
@@ -121,6 +132,7 @@ class BrowseSourceViewModelTest {
         val original = snapshot(completed = true)
         saved[1] = original
         val model = createModel()
+        model.search(filters = model.state.value.filters)
         model.clearDefaultFilters()
 
         SourceFilterSnapshot.capture(model.state.value.listing.filters) shouldBe original
@@ -129,7 +141,10 @@ class BrowseSourceViewModelTest {
 
         model.undoClearDefaultFilters(original)
 
-        SourceFilterSnapshot.capture(createModel().state.value.listing.filters) shouldBe original
+        val reopened = createModel()
+        reopened.state.value.listing shouldBe Listing.Popular
+        reopened.openFilterSheet()
+        SourceFilterSnapshot.capture(reopened.state.value.filters) shouldBe original
     }
 
     @Test
@@ -137,6 +152,7 @@ class BrowseSourceViewModelTest {
         val original = snapshot(completed = true)
         saved[1] = original
         val model = createModel()
+        model.search(filters = model.state.value.filters)
         model.resetFilters()
 
         model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Different
@@ -155,6 +171,7 @@ class BrowseSourceViewModelTest {
         val original = snapshot(completed = true)
         saved[1] = original
         val model = createModel()
+        model.search(filters = model.state.value.filters)
         model.openFilterSheet()
         val editing = model.state.value.filters
         (editing[0] as Filter.CheckBox).state = false
@@ -175,16 +192,20 @@ class BrowseSourceViewModelTest {
     }
 
     @Test
-    fun `explicit Popular Latest and text search entries bypass saved defaults`() = runTest {
+    fun `explicit listings and searches remain unchanged when saved defaults prefill the filter sheet`() = runTest {
         saved[1] = snapshot(completed = true)
         listOf(GetRemoteManga.QUERY_POPULAR, GetRemoteManga.QUERY_LATEST, "Vampires").forEach { query ->
-            val model = createModel(query = query, openWithDefaultFilters = false)
+            val model = createModel(query = query)
 
             model.state.value.listing.query shouldBe query
-            model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Different
-            SourceFilterSnapshot.capture(model.state.value.filters) shouldBe snapshot()
+            model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Matches
+            model.openFilterSheet()
+            model.state.value.listing.query shouldBe query
+            SourceFilterSnapshot.capture(model.state.value.filters) shouldBe saved[1]
             if (model.state.value.listing is Listing.Search) {
                 SourceFilterSnapshot.capture(model.state.value.listing.filters) shouldBe snapshot()
+            } else {
+                model.state.value.listing.filters.isEmpty() shouldBe true
             }
         }
     }
@@ -278,7 +299,6 @@ class BrowseSourceViewModelTest {
     private suspend fun TestScope.createModel(
         sourceId: Long = 1,
         query: String = GetRemoteManga.QUERY_POPULAR,
-        openWithDefaultFilters: Boolean = true,
         sourceFilters: () -> FilterList = { filters() },
     ): BrowseSourceViewModel {
         val source = mockk<Source> {
@@ -298,7 +318,6 @@ class BrowseSourceViewModelTest {
         val model = BrowseSourceViewModel(
             sourceId = sourceId,
             listingQuery = query,
-            openWithDefaultFilters = openWithDefaultFilters,
             appScope = backgroundScope,
             sourceManager = sourceManager,
             sourcePreferences = preferences,

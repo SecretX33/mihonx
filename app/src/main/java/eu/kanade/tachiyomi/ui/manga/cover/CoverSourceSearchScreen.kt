@@ -44,7 +44,7 @@ data class CoverSourceSearchScreen(
         val navigator = LocalNavigator.currentOrThrow
         val uriHandler = LocalUriHandler.current
         val viewModel = assistedMetroViewModel<BrowseSourceViewModel, BrowseSourceViewModel.Factory> {
-            create(sourceId = sourceId, listingQuery = query, openWithDefaultFilters = false)
+            create(sourceId = sourceId, listingQuery = query)
         }
         val state by viewModel.state.collectAsState()
         val source = state.source

@@ -55,7 +55,7 @@ data class MigrateSourceSearchScreen(
 
         val viewModel =
             assistedMetroViewModel<BrowseSourceViewModel, BrowseSourceViewModel.Factory> {
-                create(sourceId = sourceId, listingQuery = query, openWithDefaultFilters = false)
+                create(sourceId = sourceId, listingQuery = query)
             }
         val state by viewModel.state.collectAsState()
 

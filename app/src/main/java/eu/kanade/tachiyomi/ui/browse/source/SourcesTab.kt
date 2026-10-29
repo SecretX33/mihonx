@@ -13,7 +13,6 @@ import eu.kanade.presentation.browse.SourcesScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
-import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel.Listing
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -48,13 +47,7 @@ fun Screen.sourcesTab(): TabContent {
                 state = state,
                 contentPadding = contentPadding,
                 onClickItem = { source, listing ->
-                    navigator.push(
-                        BrowseSourceScreen(
-                            source.id,
-                            listing.query,
-                            openWithDefaultFilters = listing == Listing.Popular,
-                        ),
-                    )
+                    navigator.push(BrowseSourceScreen(source.id, listing.query))
                 },
                 onClickPin = viewModel::togglePin,
                 onLongClickItem = viewModel::showSourceDialog,
