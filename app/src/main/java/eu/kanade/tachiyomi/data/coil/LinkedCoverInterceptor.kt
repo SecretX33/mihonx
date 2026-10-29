@@ -31,8 +31,8 @@ class LinkedCoverInterceptor(
         val link = store.get(manga) ?: return chain.proceed()
 
         val linkedResult = try {
-            resolver.resolve(link, chain.request.networkCachePolicy.readEnabled)?.let { resolved ->
-                val cover = resolved.copy(lastModified = manga.coverLastModified)
+            resolver.resolve(link, chain.request.networkCachePolicy.readEnabled, manga)?.let { resolved ->
+                val cover = resolved.copy(isMangaFavorite = manga.favorite, lastModified = manga.coverLastModified)
                 val request = chain.request.newBuilder()
                     .data(cover)
                     .memoryCacheKey("linked-cover:${link.sourceId}:${link.url}:${cover.url}:${cover.lastModified}")

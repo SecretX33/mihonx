@@ -23,6 +23,7 @@ import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
 import java.io.IOException
+import kotlin.time.Instant
 
 class LinkedCoverInterceptorTest {
 
@@ -34,7 +35,7 @@ class LinkedCoverInterceptorTest {
         every { get(manga) } returns link
     }
     private val resolver = mockk<LinkedCoverResolver> {
-        coEvery { resolve(link, true) } returns cover
+        coEvery { resolve(link, true, any()) } returns cover
     }
     private val getManga = mockk<GetManga>()
     private val extras = Extras.Builder()
@@ -81,13 +82,43 @@ class LinkedCoverInterceptorTest {
 
         interceptor.intercept(chain) shouldBe fallback
 
-        coVerify(exactly = 0) { resolver.resolve(any(), any()) }
+        coVerify(exactly = 0) { resolver.resolve(any(), any(), any()) }
         coVerify(exactly = 1) { chain.proceed() }
     }
 
     @Test
+    fun `library alternate covers use the persistent library cover cache`() = runTest {
+        val libraryManga = manga.copy(favoriteAt = Instant.fromEpochMilliseconds(1))
+        every { request.data } returns libraryManga
+        every { store.get(libraryManga) } returns link
+
+        interceptor.intercept(chain)
+
+        verify { requestBuilder.data(cover.copy(isMangaFavorite = true)) }
+        extras.build().getOrDefault(MangaCoverFetcher.USE_CUSTOM_COVER_KEY) shouldBe false
+    }
+
+    @Test
+    fun `linked details use the original entry cover refresh state`() = runTest {
+        interceptor.intercept(chain)
+
+        coVerify(exactly = 1) { resolver.resolve(link, true, manga) }
+    }
+
+    @Test
+    fun `offline image failure does not refresh details`() = runTest {
+        every { request.networkCachePolicy } returns CachePolicy.DISABLED
+        coEvery { resolver.resolve(link, false, manga) } returns cover
+        coEvery { linkedChain.proceed() } returns ErrorResult(null, linkedRequest, IOException("Not cached"))
+
+        interceptor.intercept(chain) shouldBe fallback
+
+        coVerify(exactly = 1) { resolver.resolve(link, false, manga) }
+    }
+
+    @Test
     fun `unavailable alternate preserves existing cover loading and keeps link`() = runTest {
-        coEvery { resolver.resolve(link, true) } returns null
+        coEvery { resolver.resolve(link, true, manga) } returns null
 
         interceptor.intercept(chain) shouldBe fallback
 
@@ -130,7 +161,7 @@ class LinkedCoverInterceptorTest {
 
         interceptor.intercept(chain) shouldBe fallback
 
-        coVerify(exactly = 0) { resolver.resolve(any(), any()) }
+        coVerify(exactly = 0) { resolver.resolve(any(), any(), any()) }
     }
 
     @Test
