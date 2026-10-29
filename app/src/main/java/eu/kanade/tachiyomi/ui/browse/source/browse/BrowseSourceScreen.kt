@@ -169,7 +169,6 @@ data class BrowseSourceScreen(
                         FilterChip(
                             selected = state.listing == Listing.Popular,
                             onClick = {
-                                viewModel.resetFilters()
                                 viewModel.setListing(Listing.Popular)
                             },
                             leadingIcon = {
@@ -188,7 +187,6 @@ data class BrowseSourceScreen(
                             FilterChip(
                                 selected = state.listing == Listing.Latest,
                                 onClick = {
-                                    viewModel.resetFilters()
                                     viewModel.setListing(Listing.Latest)
                                 },
                                 leadingIcon = {

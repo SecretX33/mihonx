@@ -190,17 +190,62 @@ class BrowseSourceViewModelTest {
     }
 
     @Test
-    fun `switching to Popular or Latest does not change saved defaults`() = runTest {
+    fun `switching to Popular or Latest preserves restored defaults in the filter sheet`() = runTest {
         val original = snapshot(completed = true)
         saved[1] = original
         val model = createModel()
 
         listOf(Listing.Popular, Listing.Latest).forEach { listing ->
-            model.resetFilters()
             model.setListing(listing)
             model.state.value.listing shouldBe listing
+            model.state.value.listing.filters.isEmpty() shouldBe true
+            model.openFilterSheet()
+            SourceFilterSnapshot.capture(model.state.value.filters) shouldBe original
+            model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Matches
+            model.setDialog(null)
             saved[1] shouldBe original
         }
+    }
+
+    @Test
+    fun `switching to Popular or Latest preserves temporary filters instead of restoring defaults`() = runTest {
+        val original = snapshot(completed = true)
+        val temporary = snapshot(action = Filter.TriState.STATE_EXCLUDE)
+        saved[1] = original
+        val model = createModel()
+        model.setFilters(filters(action = Filter.TriState.STATE_EXCLUDE))
+        model.search(filters = model.state.value.filters)
+
+        listOf(Listing.Popular, Listing.Latest, Listing.Popular).forEach { listing ->
+            model.setListing(listing)
+            model.state.value.listing shouldBe listing
+            model.state.value.listing.filters.isEmpty() shouldBe true
+            model.openFilterSheet()
+            SourceFilterSnapshot.capture(model.state.value.filters) shouldBe temporary
+            model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.Different
+            model.search(filters = model.state.value.filters)
+            model.setDialog(null)
+            SourceFilterSnapshot.capture(model.state.value.listing.filters) shouldBe temporary
+            saved[1] shouldBe original
+        }
+    }
+
+    @Test
+    fun `switching tabs preserves unapplied filter edits without saved defaults`() = runTest {
+        val model = createModel()
+        model.setFilters(filters(completed = true, action = Filter.TriState.STATE_INCLUDE))
+        val temporary = snapshot(completed = true, action = Filter.TriState.STATE_INCLUDE)
+
+        listOf(Listing.Latest, Listing.Popular, Listing.Latest).forEach { listing ->
+            model.setListing(listing)
+            model.openFilterSheet()
+            SourceFilterSnapshot.capture(model.state.value.filters) shouldBe temporary
+            model.state.value.defaultFilterStatus shouldBe DefaultFilterStatus.None
+            model.setDialog(null)
+        }
+
+        saved.isEmpty() shouldBe true
+        createModel().state.value.listing shouldBe Listing.Popular
     }
 
     @Test
