@@ -1,12 +1,15 @@
 package eu.kanade.tachiyomi.data.coil
 
+import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.cache.CoverLink
+import eu.kanade.tachiyomi.data.cache.LinkedCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import eu.kanade.tachiyomi.source.online.HttpSource
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -16,8 +19,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.io.TempDir
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
+import java.io.File
 import java.io.IOException
+import kotlin.time.Instant
 
 class LinkedCoverResolverTest {
 
@@ -25,29 +32,38 @@ class LinkedCoverResolverTest {
     private val sourceManager = mockk<SourceManager> {
         coEvery { get(20) } returns source
     }
+    private val coverCache = mockk<CoverCache>(relaxed = true)
     private val link = CoverLink(20, "/selected", "Selected", "Cover source")
+    private val manga = Manga.create().copy(
+        id = 1,
+        favoriteAt = Instant.fromEpochMilliseconds(1),
+        coverLastModified = Instant.fromEpochMilliseconds(100),
+    )
     private var time = 0L
-    private val resolver = LinkedCoverResolver(sourceManager) { time }
+
+    @TempDir
+    lateinit var directory: File
+    private val resolver by lazy { newResolver() }
+
+    private fun newResolver() = LinkedCoverResolver(sourceManager, LinkedCoverCache(directory), coverCache) { time }
+
+    private fun details(url: String? = "https://covers.example/cover.jpg") = SMangaUpdate(
+        SManga.create().apply { thumbnail_url = url },
+        emptyList(),
+    )
 
     @Test
     fun `requests only details of the explicitly selected entry`() = runBlocking<Unit> {
-        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } answers {
-            SMangaUpdate(
-                SManga.create().apply { thumbnail_url = "https://covers.example/high-quality.jpg" },
-                emptyList(),
-            )
-        }
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
 
         val result = resolver.resolve(link, allowNetwork = true)
 
         result?.sourceId shouldBe 20
-        result?.url shouldBe "https://covers.example/high-quality.jpg"
+        result?.url shouldBe "https://covers.example/cover.jpg"
         result?.isMangaFavorite shouldBe false
         coVerify(exactly = 1) {
             source.getMangaUpdate(
-                match {
-                    it.url == "/selected"
-                },
+                match { it.url == "/selected" },
                 emptyList(),
                 fetchDetails = true,
                 fetchChapters = false,
@@ -63,7 +79,7 @@ class LinkedCoverResolverTest {
     }
 
     @Test
-    fun `missing or failed cover produces no alternate result and retries later`() = runBlocking<Unit> {
+    fun `failed cover retries later without retrying on every scroll`() = runBlocking<Unit> {
         coEvery { source.getMangaUpdate(any(), any(), any(), any()) } throws IOException("Unavailable")
 
         resolver.resolve(link, allowNetwork = true) shouldBe null
@@ -71,25 +87,86 @@ class LinkedCoverResolverTest {
         coVerify(exactly = 1) { source.getMangaUpdate(any(), any(), any(), any()) }
 
         time = 61_000
-        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns SMangaUpdate(
-            SManga.create().apply { thumbnail_url = null },
-            emptyList(),
-        )
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details(null)
         resolver.resolve(link, allowNetwork = true) shouldBe null
         coVerify(exactly = 2) { source.getMangaUpdate(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `cover details are cached without searching again`() = runBlocking<Unit> {
-        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns SMangaUpdate(
-            SManga.create().apply { thumbnail_url = "https://covers.example/cover.jpg" },
-            emptyList(),
-        )
-        val result = resolver.resolve(link, allowNetwork = true)
+    fun `scrolling and elapsed time reuse details without an hourly refresh`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
+        val result = resolver.resolve(link, allowNetwork = true, manga)
+        time = 7 * 24 * 3_600_000L
 
-        resolver.resolve(link, allowNetwork = false) shouldBe result
-        resolver.resolve(link, allowNetwork = true) shouldBe result
+        repeat(20) { resolver.resolve(link, allowNetwork = true, manga) shouldBe result }
+        resolver.resolve(link, allowNetwork = false, manga) shouldBe result
         coVerify(exactly = 1) { source.getMangaUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `restart reuses resolved URLs from disk even offline`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
+        val result = resolver.resolve(link, allowNetwork = true, manga)
+        time = 7 * 24 * 3_600_000L
+
+        newResolver().resolve(link, allowNetwork = false, manga) shouldBe result
+        newResolver().resolve(link, allowNetwork = true, manga) shouldBe result
+        coVerify(exactly = 1) { source.getMangaUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `normal cover refresh resolves linked details once and invalidates unchanged image URL`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
+        val image = File(directory, "cover.jpg")
+        every { coverCache.getCoverFile("https://covers.example/cover.jpg") } returns image
+        resolver.resolve(link, allowNetwork = true, manga)
+        image.writeText("old cover bytes")
+        val refreshed = manga.copy(coverLastModified = Instant.fromEpochMilliseconds(200))
+
+        newResolver().resolve(link, allowNetwork = true, refreshed)?.url shouldBe "https://covers.example/cover.jpg"
+        image.exists() shouldBe false
+        image.writeText("refreshed cover bytes")
+        newResolver().resolve(link, allowNetwork = true, refreshed)?.url shouldBe "https://covers.example/cover.jpg"
+        image.readText() shouldBe "refreshed cover bytes"
+        coVerify(exactly = 2) { source.getMangaUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `normal refresh discovers a changed alternative URL`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returnsMany listOf(
+            details("https://covers.example/old.jpg"),
+            details("https://covers.example/new.jpg"),
+        )
+        resolver.resolve(link, allowNetwork = true, manga)?.url shouldBe "https://covers.example/old.jpg"
+        val refreshed = manga.copy(coverLastModified = Instant.fromEpochMilliseconds(200))
+
+        resolver.resolve(link, allowNetwork = true, refreshed)?.url shouldBe "https://covers.example/new.jpg"
+        newResolver().resolve(link, allowNetwork = false, refreshed)?.url shouldBe "https://covers.example/new.jpg"
+    }
+
+    @Test
+    fun `titles sharing a linked entry keep independent cover refresh state`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
+        val other = manga.copy(id = 2, coverLastModified = Instant.fromEpochMilliseconds(300))
+        resolver.resolve(link, allowNetwork = true, manga)
+        resolver.resolve(link, allowNetwork = true, other)
+
+        repeat(5) {
+            resolver.resolve(link, allowNetwork = true, manga)
+            resolver.resolve(link, allowNetwork = true, other)
+        }
+        coVerify(exactly = 2) { source.getMangaUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `unavailable cover after normal refresh falls back without reusing outdated details`() = runBlocking<Unit> {
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns details()
+        resolver.resolve(link, allowNetwork = true, manga)
+        val refreshed = manga.copy(coverLastModified = Instant.fromEpochMilliseconds(200))
+        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } throws IOException("Unavailable")
+
+        resolver.resolve(link, allowNetwork = true, refreshed) shouldBe null
+        newResolver().resolve(link, allowNetwork = false, refreshed) shouldBe null
     }
 
     @Test
@@ -100,30 +177,14 @@ class LinkedCoverResolverTest {
     }
 
     @Test
-    fun `expired details do not retain an unavailable alternate cover`() = runBlocking<Unit> {
-        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } returns SMangaUpdate(
-            SManga.create().apply { thumbnail_url = "https://covers.example/cover.jpg" },
-            emptyList(),
-        )
-        resolver.resolve(link, allowNetwork = true)?.url shouldBe "https://covers.example/cover.jpg"
-        time = 3_600_001
-        coEvery { source.getMangaUpdate(any(), any(), any(), any()) } throws IOException("Unavailable")
-
-        resolver.resolve(link, allowNetwork = true) shouldBe null
-    }
-
-    @Test
-    fun `concurrent requests for the same entry share one details fetch`() = runBlocking<Unit> {
+    fun `concurrent requests share one details fetch`() = runBlocking<Unit> {
         coEvery { source.getMangaUpdate(any(), any(), any(), any()) } coAnswers {
             delay(25)
-            SMangaUpdate(
-                SManga.create().apply { thumbnail_url = "https://covers.example/cover.jpg" },
-                emptyList(),
-            )
+            details()
         }
 
         val covers = (1..20).map {
-            async(Dispatchers.Default) { resolver.resolve(link, allowNetwork = true) }
+            async(Dispatchers.Default) { resolver.resolve(link, allowNetwork = true, manga) }
         }.awaitAll()
 
         covers.all { it?.url == "https://covers.example/cover.jpg" } shouldBe true
