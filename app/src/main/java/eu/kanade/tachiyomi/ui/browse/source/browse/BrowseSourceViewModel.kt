@@ -23,6 +23,8 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.interactor.GetIncognitoState
+import eu.kanade.domain.source.model.SourceFilterSnapshot
+import eu.kanade.domain.source.service.SourceFilterDefaults
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.tachiyomi.data.cache.CoverCache
@@ -67,9 +69,11 @@ import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 class BrowseSourceViewModel(
     @Assisted private val sourceId: Long,
     @Assisted listingQuery: String?,
+    @Assisted private val openWithDefaultFilters: Boolean,
     @AppCoroutineScope private val appScope: CoroutineScope,
     private val sourceManager: SourceManager,
     sourcePreferences: SourcePreferences,
+    private val sourceFilterDefaults: SourceFilterDefaults,
     private val libraryPreferences: LibraryPreferences,
     private val coverCache: CoverCache,
     private val coverLinkStore: CoverLinkStore,
@@ -91,7 +95,7 @@ class BrowseSourceViewModel(
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(AppScope::class)
     interface Factory : ManualViewModelAssistedFactory {
-        fun create(sourceId: Long, listingQuery: String?): BrowseSourceViewModel
+        fun create(sourceId: Long, listingQuery: String?, openWithDefaultFilters: Boolean): BrowseSourceViewModel
     }
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
@@ -101,21 +105,35 @@ class BrowseSourceViewModel(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             val source = sourceManager.getOrStub(sourceId)
+            val savedFilters = sourceFilterDefaults.get(sourceId)
+            val hasSavedFilters = sourceFilterDefaults.isSet(sourceId)
 
             state.update {
                 var query: String? = null
                 var listing = it.listing
+                val filters = source.getFilterList()
 
                 if (listing is Listing.Search) {
                     query = listing.query
                     listing = Listing.Search(query, source.getFilterList())
                 }
 
+                if (openWithDefaultFilters && savedFilters?.canRestore(filters) == true) {
+                    val listingFilters = source.getFilterList()
+                    if (savedFilters.restore(listingFilters)) {
+                        savedFilters.restore(filters)
+                        query = null
+                        listing = Listing.Search(null, listingFilters)
+                    }
+                }
+
                 it.copy(
                     source = source,
                     listing = listing,
-                    filters = source.getFilterList(),
+                    filters = filters,
                     toolbarQuery = query,
+                    savedFilters = savedFilters,
+                    hasSavedFilters = hasSavedFilters,
                 )
             }
 
@@ -173,6 +191,29 @@ class BrowseSourceViewModel(
                 filters = filters,
             )
         }
+    }
+
+    fun saveDefaultFilters() {
+        val snapshot = SourceFilterSnapshot.capture(state.value.filters)
+        if (!snapshot.canRestore(state.value.filters)) return
+        sourceFilterDefaults.set(sourceId, snapshot)
+        state.update { it.copy(savedFilters = snapshot, hasSavedFilters = true) }
+    }
+
+    fun restoreDefaultFilters() {
+        val filters = source?.getFilterList() ?: return
+        if (state.value.savedFilters?.restore(filters) != true) return
+        state.update { it.copy(filters = filters) }
+    }
+
+    fun clearDefaultFilters() {
+        sourceFilterDefaults.clear(sourceId)
+        state.update { it.copy(savedFilters = null, hasSavedFilters = false) }
+    }
+
+    fun undoClearDefaultFilters(snapshot: SourceFilterSnapshot) {
+        sourceFilterDefaults.set(sourceId, snapshot)
+        state.update { it.copy(savedFilters = snapshot, hasSavedFilters = true) }
     }
 
     fun search(query: String? = null, filters: FilterList? = null) {
@@ -321,7 +362,9 @@ class BrowseSourceViewModel(
     }
 
     fun openFilterSheet() {
-        setDialog(Dialog.Filter)
+        val filters = source?.getFilterList() ?: return
+        SourceFilterSnapshot.capture(state.value.filters).restore(filters)
+        state.update { it.copy(filters = filters, dialog = Dialog.Filter) }
     }
 
     fun setDialog(dialog: Dialog?) {
@@ -362,6 +405,13 @@ class BrowseSourceViewModel(
         data class Migrate(val target: Manga, val current: Manga) : Dialog
     }
 
+    enum class DefaultFilterStatus {
+        None,
+        Matches,
+        Different,
+        Unavailable,
+    }
+
     @Immutable
     data class State(
         val listing: Listing,
@@ -369,7 +419,21 @@ class BrowseSourceViewModel(
         val filters: FilterList = FilterList(),
         val toolbarQuery: String? = null,
         val dialog: Dialog? = null,
+        val savedFilters: SourceFilterSnapshot? = null,
+        val hasSavedFilters: Boolean = false,
     ) {
         val isUserQuery get() = listing is Listing.Search && !listing.query.isNullOrEmpty()
+
+        val defaultFilterStatus: DefaultFilterStatus
+            get() = when {
+                !hasSavedFilters -> DefaultFilterStatus.None
+                savedFilters?.canRestore(filters) != true -> DefaultFilterStatus.Unavailable
+                savedFilters == SourceFilterSnapshot.capture(filters) -> DefaultFilterStatus.Matches
+                else -> DefaultFilterStatus.Different
+            }
+
+        val canSaveDefaultFilters: Boolean
+            get() = filters.isNotEmpty() && defaultFilterStatus != DefaultFilterStatus.Matches &&
+                SourceFilterSnapshot.capture(filters).canRestore(filters)
     }
 }

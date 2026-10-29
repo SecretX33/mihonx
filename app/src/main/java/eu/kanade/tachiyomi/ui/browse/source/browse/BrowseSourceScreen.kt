@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -41,6 +43,7 @@ import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
+import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel.DefaultFilterStatus
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel.Listing
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
@@ -57,6 +60,7 @@ import mihon.icons.materialsymbols.rounded.Verified
 import mihon.icons.materialsymbols.roundedfilled.Favorite
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.core.common.Constants
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -68,6 +72,7 @@ import tachiyomi.source.local.LocalSource
 data class BrowseSourceScreen(
     val sourceId: Long,
     private val listingQuery: String?,
+    private val openWithDefaultFilters: Boolean = false,
 ) : Screen(), AssistContentScreen {
 
     private var assistUrl: String? = null
@@ -78,7 +83,11 @@ data class BrowseSourceScreen(
     override fun Content() {
         val viewModel =
             assistedMetroViewModel<BrowseSourceViewModel, BrowseSourceViewModel.Factory> {
-                create(sourceId = sourceId, listingQuery = listingQuery)
+                create(
+                    sourceId = sourceId,
+                    listingQuery = listingQuery,
+                    openWithDefaultFilters = openWithDefaultFilters,
+                )
             }
         val state by viewModel.state.collectAsState()
 
@@ -105,6 +114,7 @@ data class BrowseSourceScreen(
         }
 
         val scope = rememberCoroutineScope()
+        val context = LocalContext.current
         val haptic = LocalHapticFeedback.current
         val uriHandler = LocalUriHandler.current
         val snackbarHostState = remember { SnackbarHostState() }
@@ -123,6 +133,11 @@ data class BrowseSourceScreen(
 
         LaunchedEffect(source) {
             assistUrl = (source as? HttpSource)?.getHomeUrl()
+            if (openWithDefaultFilters && state.defaultFilterStatus == DefaultFilterStatus.Unavailable) {
+                snackbarHostState.showSnackbar(
+                    context.stringResource(MR.strings.source_filter_defaults_unavailable_message),
+                )
+            }
         }
 
         Scaffold(
@@ -189,7 +204,7 @@ data class BrowseSourceScreen(
                                 },
                             )
                         }
-                        if (state.filters.isNotEmpty()) {
+                        if (state.filters.isNotEmpty() || state.hasSavedFilters) {
                             FilterChip(
                                 selected = state.listing is Listing.Search,
                                 onClick = viewModel::openFilterSheet,
@@ -211,7 +226,11 @@ data class BrowseSourceScreen(
                     HorizontalDivider()
                 }
             },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            snackbarHost = {
+                if (state.dialog != BrowseSourceViewModel.Dialog.Filter) {
+                    SnackbarHost(hostState = snackbarHostState)
+                }
+            },
         ) { paddingValues ->
             BrowseSourceContent(
                 source = source,
@@ -249,6 +268,39 @@ data class BrowseSourceScreen(
                     onReset = viewModel::resetFilters,
                     onFilter = { viewModel.search(filters = state.filters) },
                     onUpdate = viewModel::setFilters,
+                    snackbarHostState = snackbarHostState,
+                    defaultFilters = {
+                        SourceFilterDefaultActions(
+                            status = state.defaultFilterStatus,
+                            canSave = state.canSaveDefaultFilters,
+                            onSave = {
+                                viewModel.saveDefaultFilters()
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        context.stringResource(MR.strings.source_filter_defaults_saved),
+                                    )
+                                }
+                            },
+                            onRestore = viewModel::restoreDefaultFilters,
+                            onClear = {
+                                val savedFilters = state.savedFilters
+                                viewModel.clearDefaultFilters()
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = context.stringResource(MR.strings.source_filter_defaults_cleared),
+                                        actionLabel = savedFilters?.let {
+                                            context.stringResource(MR.strings.action_undo)
+                                        },
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed && savedFilters != null) {
+                                        viewModel.undoClearDefaultFilters(savedFilters)
+                                    }
+                                }
+                            },
+                        )
+                    },
                 )
             }
             is BrowseSourceViewModel.Dialog.AddDuplicateManga -> {
